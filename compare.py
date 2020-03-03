@@ -32,10 +32,6 @@ def vendor(v1, v2):
     #v2 = re.sub(r'[\s]', '', v2)
     v1 = v1.lower()
     v2 = v2.lower()
-    if levenshtein_distance(v1,v2) > 3:
-        #print(v1, '---', v2)
-        x= 1
-
     return levenshtein_distance(v1,v2) <= 3
 
 def taxRate(r1, r2):
@@ -43,12 +39,11 @@ def taxRate(r1, r2):
         return False
     r1 = re.sub(r'%', '', r1)
     r2 = re.sub(r'%', '', r2)
+    r1 = re.sub(r',', '.', r1)
+    r2 = re.sub(r',', '.', r2)
     try:
         r1 = float(r1)
         r2 = float(r2)
-        if r1 != r2:
-            x = 1
-            #print(r1, r2)
         return r1 == r2
     except:
         return False

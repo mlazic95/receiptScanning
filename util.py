@@ -23,6 +23,25 @@ def height(wordBox):
 
     return y1-y2
 
+def neighbourContains(wordBox, s):
+    s = s.lower()
+    if 'bottom' in wordBox and s in wordBox['bottom']['text'].lower():
+        return True
+    #if 'top' in wordBox and  s in wordBox['top']['text'].lower():
+        #return True
+    if 'left' in wordBox and  s in wordBox['left']['text'].lower():
+        return True
+    if 'right' in wordBox and  s in wordBox['right']['text'].lower():
+        return True
+    return False
+
+def stringInLine(line, s):
+    s = s.lower()
+    for word in line:
+        if s in word['text'].lower():
+            return True
+    return False
+
 def alphaRatio(s):
     alpha = 0.0
     for c in s:

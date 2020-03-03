@@ -1,8 +1,9 @@
 import behaviour_tree as bt
 import prediction
 import re
+import util
 
-class TotalPrice(prediction.Prediction):
+class Date(prediction.Prediction):
     def __init__(self, rawText, lines):
         super().__init__()
         self._rawText = rawText
@@ -22,24 +23,21 @@ class TotalPrice(prediction.Prediction):
 
         def action(self):
             text = self.__outer._rawText
-            m = re.findall(r'[0-9]+\.[0-9]{2}', text)
+            m = re.findall(r'[0-9]{4}[-|.|\s|\\][0-9]{2}[-|.|\s|\\][0-9]{2}', text)
             if m:
-                biggest = 0
-                for potential_price in m:
-                    try:
-                        potential_price = float(potential_price)
-                        if potential_price > biggest:
-                            biggest = potential_price
-                    except:
-                        continue
-                if biggest > 0:
-                    self.__outer._result = biggest
-                    self._status = bt.Status.SUCCESS
-                    return 
-            m = re.findall(r'(?<=TOTAL\s)(\w+)', text)
-            if m:
-                self.__outer._result = m[0]  
+                self.__outer._result = m[0]
                 self._status = bt.Status.SUCCESS
                 return
+            m = re.findall(r'[0-9]{2}[-|.|\s|\\][0-9]{2}[-|.|\s|\\][0-9]{4}', text)
+            if m:
+                self.__outer._result = m[0]
+                self._status = bt.Status.SUCCESS
+                return
+            for month in util.months:
+                m = re.findall(r'[0-9]{2}\s?' + month + r'\s?[\']?[0-9]{2}', text, flags=re.IGNORECASE)
+                if m:
+                    self.__outer._result = m[0]
+                    self._status = bt.Status.SUCCESS
+                    return
             self._status = bt.Status.FAIL
             

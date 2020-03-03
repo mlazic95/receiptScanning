@@ -52,7 +52,7 @@ class Vendor(prediction.Prediction):
                 if special in firstWord:
                     includeSpecial = True
                     break
-            return firstWord.lower() != 'kvitto' and not includeSpecial and util.alphaRatio(firstWord) > 0
+            return firstWord.lower() != 'kvitto' and not includeSpecial and util.alphaRatio(firstWord) > 0 and len(firstWord) > 2
 
     class RemoveTopWord(bt.Action):
         def __init__(self, outer):
@@ -68,7 +68,7 @@ class Vendor(prediction.Prediction):
                     if special in topWord:
                         includeSpecial = True
                         break
-                if topWord.lower() != 'kvitto' and not includeSpecial and util.alphaRatio(topWord) > 0:
+                if topWord.lower() != 'kvitto' and not includeSpecial and util.alphaRatio(topWord) > 0 and len(topWord) > 2:
                     break
                 else:
                     self.__outer._topIndex+=1

@@ -1,11 +1,13 @@
 from itertools import chain
 import util
+
 class Receipt:
     def __init__(self, lines, groundTruth):
         self.lines = lines
         self.groundTruth = groundTruth
         self.prediction = {}
         self.rawText = self.concatinateText()
+        self.words = list(chain.from_iterable(self.lines))
         self.graph = self.createGraph()
         self.linesText = self.concatinateText(perserveLines=True)
     
@@ -20,8 +22,7 @@ class Receipt:
 
     def createGraph(self):
         graph = {}
-        words = list(chain.from_iterable(self.lines))
-        for word in words:
+        for word in self.words:
             graph[word['id']] = {}
             lineIndex, line = util.getLineForWord(word, self.lines)
             ## Find neighbours

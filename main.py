@@ -27,7 +27,7 @@ def main():
             text_lines = tx.createLines(text_data)
             with open(os.path.join(labelsDir, fileName.split('_')[0] + '_labels.json')) as ground_truth_json:
                 truth = json.load(ground_truth_json)
-                if 'address' in truth and truth['address'] == 'Slöjogatan 10':
+                if 'tax_rate' in truth and '&' in truth['tax_rate']:
                     print(fileName)
                 receipts.append(rc.Receipt(text_lines, truth))
     for receipt in receipts:
