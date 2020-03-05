@@ -1,10 +1,11 @@
 import math
 import text_processor as tx
-from dateutil.parser import parse
 import string
+import re
 
-currencyList = ['SEK', 'DKK','CHF', 'EUR', 'USD', 'GBP']
-months = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'nov', 'dec']
+currencyList = ['SEK', 'DKK','CHF', 'EUR', 'USD', 'GBP', 'IDR']
+months = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', 'okt']
+totalKeywords = ['total', 'belopp', 'summa', 'betala', 'tot', 'kontokort', 'amount', 'net ']
 vowels = ['a', 'e', 'i', 'o', 'u']
 
 def area(wordBox):
@@ -22,6 +23,28 @@ def height(wordBox):
     y2 = float(wordBox["bottomLeft"][:-1].split(',')[1])
 
     return y1-y2
+
+def getPriceFromLine(line):
+    rawLine = ''
+    for word in line:
+        rawLine += word['text'] + ' '
+    rawLine = rawLine[:-1]
+    m = re.findall(r'[\d]\s?[0-9]+[\.|,]?[0-9]*', rawLine)
+    m1 = re.findall(r'[\d],[0-9]+[\.|,]?[0-9]*', rawLine)
+    m+=m1
+    biggest = 0
+    if m:
+        for match in m:
+            res = re.sub(r'\s', '', match)
+            res = re.sub(r',', '.', res)
+            if res.count('.') > 1:
+                res = re.sub(r'\.', '', res, 1)
+            res = float(res)
+            if res > biggest:
+                biggest = res
+        if biggest > 0:
+            return biggest
+    return None
 
 def neighbourContains(wordBox, s):
     s = s.lower()

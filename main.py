@@ -6,6 +6,7 @@ from ruleBased import predict
 import compare
 import enchant
 import util
+from dateutil.parser import parse
 
 
 textDir = "/Users/markolazic/Desktop/Receipt Labeler/MyFirstImageReader/labels/text"
@@ -27,9 +28,10 @@ def main():
             text_lines = tx.createLines(text_data)
             with open(os.path.join(labelsDir, fileName.split('_')[0] + '_labels.json')) as ground_truth_json:
                 truth = json.load(ground_truth_json)
-                if 'tax_rate' in truth and '&' in truth['tax_rate']:
+                receipt = rc.Receipt(text_lines, truth)
+                receipts.append(receipt) 
+                if 'address' in truth and truth['address']== 'Kungsgatan 41':
                     print(fileName)
-                receipts.append(rc.Receipt(text_lines, truth))
     for receipt in receipts:
         predict(receipt)
 
@@ -62,7 +64,7 @@ def calculateAccuracy():
         if 'total_price' in receipt.groundTruth:
             total_price_total+= 1
             if compare.totalPrice(receipt.groundTruth['total_price'], receipt.prediction['total_price']):
-                total_price_correct += 1 
+                total_price_correct += 1
         ## Check currecy
         if 'currency' in receipt.groundTruth:
             currency_total+=1
@@ -71,7 +73,7 @@ def calculateAccuracy():
         ## Check date
         if 'date' in receipt.groundTruth:
             date_total+=1
-            if compare.date(receipt.groundTruth['date'], receipt.prediction['date']):
+            if compare.date(receipt.groundTruth['date'], receipt.prediction['date'], receipt.rawText):
                 date_correct += 1
         ## Check vendor
         if 'vendor' in receipt.groundTruth:
