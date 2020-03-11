@@ -5,11 +5,13 @@ class Receipt:
     def __init__(self, lines, groundTruth):
         self.lines = lines
         self.groundTruth = groundTruth
-        self.prediction = {}
+        self.ruleBasedPrediction = {}
         self.rawText = self.concatinateText()
         self.words = list(chain.from_iterable(self.lines))
         self.graph = self.createGraph()
         self.linesText = self.concatinateText(perserveLines=True)
+        self.dataWords = []
+        self.dataLabels = []
     
     def concatinateText(self, perserveLines=False):
         text = ""

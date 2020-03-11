@@ -172,3 +172,33 @@ def getLineForWord(word, lines):
         if word in line:
             return i, line
     return None
+
+def getClassInt(c):
+    if c == 'vendor':
+        return 1
+    elif c == 'total_price':
+        return 2
+    elif c == 'date':
+        return 3
+    elif c == 'address':
+        return 4
+    elif c == 'tax_rate':
+        return 5
+    return 0
+
+
+def precision(relevant, retrieved):
+    if retrieved == 0:
+        return 0
+    return relevant / retrieved
+
+def recall(relevant, retrieved):
+    if relevant == 0:
+        return 0
+    return retrieved / relevant
+
+def fScore(prec, rec):
+    if prec == 0 and rec == 0:
+        return 0
+    return 2*(prec * rec) / (prec + rec)
+

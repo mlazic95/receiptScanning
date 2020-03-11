@@ -20,8 +20,6 @@ def currency(c1, c2):
 
 def date(d1, d2, raw):
     if not d1 or not d2:
-        print(d1)
-        print(raw,'\n\n\n')
         return False
     if d1 == d2:
         return True

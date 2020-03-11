@@ -8,6 +8,7 @@ import ruleBased
 from skimage import io
 import receipt
 import util
+import re
 
 def calculateAngles(data):
     for box in data:
@@ -39,6 +40,17 @@ def rotateImage(image, angle):
   result = cv2.warpAffine(image, rot_mat, image.shape[1::-1], flags=cv2.INTER_LINEAR)
   return result
 '''
+
+def removeSwedishLetters(data):
+    keys = data.keys()
+    for key in keys:
+        if key == 'products':
+            continue
+        text = re.sub(r'ä|Ä','a', data[key])
+        text = re.sub(r'ö|Ö','o',text)
+        text = re.sub(r'å|Å','a',text)
+        data[key] = text
+    return data
 
 
 def verticalCompare(box1, box2):
