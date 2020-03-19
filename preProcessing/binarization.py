@@ -9,7 +9,7 @@ import os
 import numpy as np
 import math
 
-receiptDir = "/Users/markolazic/Desktop/Receipt Labeler/MyFirstImageReader/receipts"
+receiptDir = "/Users/markolazic/Desktop/Receipt Labeler/MyFirstImageReader/converted"
 destDir = "/Users/markolazic/Desktop/Receipt Labeler/MyFirstImageReader/processedReceipts"
 failed = "/Users/markolazic/Desktop/Receipt Labeler/MyFirstImageReader/failed"
 
@@ -42,4 +42,4 @@ def main():
 
 
 if __name__ == '__main__':
-    performRotation()
+    main()

@@ -11,46 +11,79 @@ from dateutil.parser import parse
 import create_bert_data as data_gen
 import torch
 from oracle import oracle
+from data_extraction import extract, calculateMetrics
+import random
 
 
-textDir = "/Users/markolazic/Desktop/Receipt Labeler/MyFirstImageReader/labels/text"
-labelsDir = "/Users/markolazic/Desktop/Receipt Labeler/MyFirstImageReader/labels/labels"
-destDir = "/Users/markolazic/Desktop/Receipt Labeler/MyFirstImageReader/processedReceipts"
+trainTextDir = "/Users/markolazic/Desktop/exjobb/project/data/train/text"
+trainLabelsDir = "/Users/markolazic/Desktop/exjobb/project/data/train/labels"
 
 receipts = []
+testFilePaths = []
 
 def main(args):
-    fileNames = os.listdir(textDir)
+    fileNames = os.listdir(trainTextDir)
     fileNames = [i for i in fileNames if (i.endswith('.json'))]
     for fileName in fileNames:
-        with open(os.path.join(textDir, fileName)) as text_json:
+        with open(os.path.join(trainTextDir, fileName)) as text_json:
             text_data = json.load(text_json)
             text_data = tx.filterGarbage(text_data)
             tx.calculateAngles(text_data)
             tx.assignIds(text_data)
             tx.calculateCenterPoints(text_data)
             text_lines = tx.createLines(text_data)
-            with open(os.path.join(labelsDir, fileName.split('_')[0] + '_labels.json')) as ground_truth_json:
+            with open(os.path.join(trainLabelsDir, fileName.split('_')[0] + '_labels.json')) as ground_truth_json:
                 truth = json.load(ground_truth_json)
                 truth = tx.removeSwedishLetters(truth)
-                receipt = rc.Receipt(text_lines, truth)
+                receipt = rc.Receipt(fileName,text_lines, truth)
                 receipts.append(receipt)
+    
+    f=open('./data/test/test.txt',"r")
+    for line in f:
+        testFilePaths.append(line[:-1])
+    test_reciepts = []
+    for receipt in receipts:
+        if receipt.path in testFilePaths:
+            test_reciepts.append(receipt)
+
+    if args[1] == 'create_result':
+        path = './data/results/10epochv2'
+        test_dict_path = os.path.join(path, 'res_dict.pth')
+        res_dict = torch.load(test_dict_path)
+        result = list(res_dict.items())
+        res_list = []
+        for i, (_, (labels, words)) in enumerate(result):
+            res = extract(labels,words)
+            res_list.append(res)
+        calculateMetrics(test_reciepts, res_list, writeToFile=True, path=path)
+                
 
     if args[1] == 'generate_word_data':
-        data_dict = {}
+        train_data_dict = {}
+        test_data_dict = {}
         for i, receipt in enumerate(receipts):
-            data_dict[i] = data_gen.generateWordClasses(receipt)
+            if receipt.path in testFilePaths:
+                test_data_dict[i] = data_gen.generateWordClasses(receipt)
+            else:
+                train_data_dict[i] = data_gen.generateWordClasses(receipt, correcting=True)
+        '''
         vocab = data_gen.createVocabulary(receipts)
-        f=open('./data/vocab.txt',"w+")
+        f=open('./data/my_vocab.txt',"w+")
         for w in vocab:
             f.write(w + '\n')
-        f.close()
-        #torch.save(data_dict, "./data/word_data_dict.pth")
+        f.write('[UNK]' + '\n')
+        f.write('[CLS]' + '\n')
+        f.write('[SEP]' + '\n')
+        f.write('[MASK]' + '\n')
+        f.close() '''
+
+        torch.save(train_data_dict, "./data/corr_train_data_dict.pth")
+        torch.save(test_data_dict, "./data/corr_test_data_dict.pth")
 
     if args[1] == 'oracle':
-        for i, receipt in enumerate(receipts):
+        for i, receipt in enumerate(test_reciepts):
             _ = data_gen.generateWordClasses(receipt)
-        oracle(receipts)
+        oracle(test_reciepts)
 
     if args[1] == 'rule_based':
         for receipt in receipts:

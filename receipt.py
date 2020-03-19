@@ -2,7 +2,8 @@ from itertools import chain
 import util
 
 class Receipt:
-    def __init__(self, lines, groundTruth):
+    def __init__(self, path, lines, groundTruth):
+        self.path = path
         self.lines = lines
         self.groundTruth = groundTruth
         self.ruleBasedPrediction = {}
