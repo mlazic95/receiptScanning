@@ -18,39 +18,58 @@ def generateWordClasses(reciept, correcting=False):
   spans = []
   index = 0
   for key in keys:
+    founded = []
+    ##TODO: Fix this shit
     if key == 'products':
-      continue
-    label = reciept.groundTruth[key]
-    text = []
-    for offset in windowSizeOffsets:
-      l = len(label) + offset
-      for i in range(0, len(raw) - l):
-        text.append(raw[i:i+l])
-    extracted = process.extractOne(label, text)
-    t = extracted[0]
-    if extracted[1] < 75:
-      continue
-    if label != t and correcting and key != 'tax_rate':
-      specials = ['(', ')', '.', '*','/']
-      for spec in specials:
-        if spec in t:
-          t = t.replace(spec, '\\' + spec)
-      try:
-        raw = re.sub(t, label, raw)
-      except:
-        print(raw)
-        print(t)
-        print(label)
-        return
-      t = label
-    foundLabels.append((t, key))
-    for offset in windowSizeOffsets:
-      l = len(label) + offset
-      for i in range(0, len(raw) - l):
-        sub = raw[i:i+l]
-        if sub == t:
-          spans.append((i, i+l, index))
-    index +=1
+      products = reciept.groundTruth[key]
+      for product in products:
+        name = product['name']
+        price = str(product['price'])
+        amount = str(product['amount'])
+        if name in list(sum(founded, ())):
+          continue
+        units = [(name, 'product_name'), (price, 'product_price')]
+        for unit, k in units:
+          text = []
+          for offset in windowSizeOffsets:
+            l = len(unit) + offset
+            for i in range(0, len(raw) - l):
+              text.append(raw[i:i+l])
+          extracted = process.extractOne(unit, text)
+          print(unit, extracted)
+          if extracted[1] < 75:
+            continue
+          founded.append((extracted[0], unit, k))
+    else:
+        label = reciept.groundTruth[key]
+        text = []
+        for offset in windowSizeOffsets:
+          l = len(label) + offset
+          for i in range(0, len(raw) - l):
+            text.append(raw[i:i+l])
+        extracted = process.extractOne(label, text)
+        founded.append((extracted[0], label, key))
+        if extracted[1] < 75:
+          continue
+    for t, label, key in founded:
+      if label != t and correcting and key != 'tax_rate':
+        specials = ['(', ')', '.', '*','/']
+        for spec in specials:
+          if spec in t:
+            t = t.replace(spec, '\\' + spec)
+        try:
+          raw = re.sub(t, label, raw)
+        except:
+          return
+        t = label
+      foundLabels.append((t, key))
+      for offset in windowSizeOffsets:
+        l = len(label) + offset
+        for i in range(0, len(raw) - l):
+          sub = raw[i:i+l]
+          if sub == t:
+            spans.append((i, i+l, index))
+      index +=1
 
   words = []
   previous = 0
@@ -82,7 +101,7 @@ def createVocabulary(reciepts):
     for word in words:
       vocab.add(word)
   '''
-  path = './data/new_vocab.txt'
+  path = './data/corr_vocab.txt'
   with open(path, 'r') as f:
     for line in f:
       vocab.add(line[:-1])
@@ -97,7 +116,7 @@ def createVocabulary(reciepts):
         if v == '[UNK]' and i < len(t):
           for x in t:
             new_set.add(x)
-  with open('./data/new_vocab.txt', 'w+') as f:
+  with open('./data/corr_vocab.txt', 'w+') as f:
     for word in (vocab.union(new_set)):
       f.write(word  + '\n')
   '''

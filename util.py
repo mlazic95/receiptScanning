@@ -96,6 +96,13 @@ def fourInARow(s):
         start = curr
     return False
 
+def isInt(s):
+    try:
+        s = int(s)
+        return True
+    except:
+        return False
+
 def vowelRatio(s):
     s = s.lower()
     count = 0.0
@@ -184,6 +191,8 @@ def getClassInt(c):
         return 4
     elif c == 'tax_rate':
         return 5
+    elif c == 'currency':
+        return 6
     return 0
 
 

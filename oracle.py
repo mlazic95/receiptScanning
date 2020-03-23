@@ -53,14 +53,16 @@ def oracle(reciepts):
             taxes += 1
         if tax:
             taxesFound+=1
-            if tax == reciept.groundTruth['tax_rate'].lower():
+            real_tax = reciept.groundTruth['tax_rate'].lower().replace('%', '').replace('.', '')
+            if tax == real_tax:
                 correctTaxes +=1
         price = getTotalPrice(reciept)
         if 'total_price' in reciept.groundTruth:
             prices += 1
         if price:
             pricesFound+=1
-            if price == reciept.groundTruth['total_price'].lower():
+            real_price = reciept.groundTruth['total_price'].lower().replace('.', '')
+            if price == real_price:
                 correctPrices +=1
         currency = getCurrency(reciept)
         if 'currency' in reciept.groundTruth:
@@ -69,7 +71,10 @@ def oracle(reciepts):
             currenciesFound+=1
             if currency == reciept.groundTruth['currency'].lower():
                 correctCurrencies +=1
-        
+                
+    totalDataPoints = vendors + dates + addresses + taxes +  prices + currencies
+    totalDataPointsFound = vendorsFound + datesFound + addressesFound + taxesFound + pricesFound + currenciesFound
+    totalCorrect = correctVendors + correctDates + correctAddresses + correctTaxes + correctPrices + correctCurrencies
         
     print('-----VENDORS-----')
     print(vendors, vendorsFound, correctVendors)
@@ -113,6 +118,13 @@ def oracle(reciepts):
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
+    print('-----TOTAL-----')
+    print(totalDataPoints, totalDataPointsFound, totalCorrect)
+    precision = util.precision(totalCorrect, totalDataPointsFound)
+    recall = util.recall(totalDataPoints, totalCorrect)
+    print('Precision:', precision)
+    print('Recall:', recall)
+    print('F1:', util.fScore(precision, recall))
 
 
 def getVendor(reciept):
@@ -133,6 +145,17 @@ def getAddress(reciept):
         return None
     return address[:-1].lower()
 
+def getProducts(reciept):
+    products = []
+    product = ''
+    for i, v in enumerate(reciept.dataWords):
+        if reciept.dataLabels[i] == 'product_price':
+            product+=v.lower() + ' '
+        elif product != '':
+            products.append(product[:-1])
+            product = ''
+    return products
+
 def getDate(reciept):
     for i, v in enumerate(reciept.dataWords):
         if reciept.dataLabels[i] == 'date':
@@ -142,13 +165,13 @@ def getDate(reciept):
 def getTotalPrice(reciept):
     for i, v in enumerate(reciept.dataWords):
         if reciept.dataLabels[i] == 'total_price':
-            return v.lower()
+            return v.lower().replace(',', '').replace('.', '')
     return None
 
 def getTaxRate(reciept):
     for i, v in enumerate(reciept.dataWords):
         if reciept.dataLabels[i] == 'tax_rate':
-            return v.lower()
+            return v.lower().replace(',', '').replace('.', '')
     return None
 
 def getCurrency(reciept):
