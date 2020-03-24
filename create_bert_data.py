@@ -19,27 +19,21 @@ def generateWordClasses(reciept, correcting=False):
   index = 0
   for key in keys:
     founded = []
-    ##TODO: Fix this shit
     if key == 'products':
       products = reciept.groundTruth[key]
       for product in products:
         name = product['name']
-        price = str(product['price'])
-        amount = str(product['amount'])
         if name in list(sum(founded, ())):
           continue
-        units = [(name, 'product_name'), (price, 'product_price')]
-        for unit, k in units:
-          text = []
-          for offset in windowSizeOffsets:
-            l = len(unit) + offset
-            for i in range(0, len(raw) - l):
-              text.append(raw[i:i+l])
-          extracted = process.extractOne(unit, text)
-          print(unit, extracted)
-          if extracted[1] < 75:
-            continue
-          founded.append((extracted[0], unit, k))
+        text = []
+        for offset in windowSizeOffsets:
+          l = len(name) + offset
+          for i in range(0, len(raw) - l):
+            text.append(raw[i:i+l])
+        extracted = process.extractOne(name, text)
+        if extracted[1] < 75:
+          continue
+        founded.append((extracted[0], name, 'product_name'))
     else:
         label = reciept.groundTruth[key]
         text = []
@@ -90,9 +84,49 @@ def generateWordClasses(reciept, correcting=False):
       textResult.append(t)
       labelsResult.append(label)
 
+  textResult, labelsResult = findProductPrices(textResult, labelsResult, reciept)
   reciept.dataWords = textResult
   reciept.dataLabels = labelsResult
   return (textResult, labelsResult)
+
+
+def findProductPrices(textResult, labelsResult, reciept):
+  products = reciept.groundTruth['products']
+  productName = ''
+  lineText = reciept.linesText
+  prices = []
+  foundRange = []
+  for index, (text, label) in enumerate(zip(textResult, labelsResult)):
+    if label == 'product_name':
+      productName+= text + ' '
+    elif productName != '':
+      productName = productName[:-1]
+      potentialPrices = [p['price'] for p in reciept.groundTruth['products'] if fuzz.ratio(p['name'], productName) > 75]
+      l = len(productName)
+      for i in range(len(lineText) - l):
+        sub = lineText[i:i+l]
+        if sub == productName and (i, i+l) not in foundRange:
+          foundRange.append((i, i + l))
+          rest = ''
+          for j in range(i + l + 1, len(lineText)):
+            if lineText[j] == '\n':
+              restWords = rest.replace('\n', '').split(' ')
+              price = None
+              for word in restWords:
+                if util.isPriceFormat(word) and floatInList(float(word.replace(',', '.')),potentialPrices):
+                  price = word
+              for s in range(index, len(textResult)):
+                if textResult[s] == price:
+                  labelsResult[s] = 'product_price'
+                  break
+              rest = ''
+              if price:
+                break
+            rest += lineText[j]
+          break
+      productName = ''
+
+  return textResult, labelsResult
 
 def createVocabulary(reciepts):
   vocab = set()
@@ -121,6 +155,13 @@ def createVocabulary(reciepts):
       f.write(word  + '\n')
   '''
   return vocab
+
+
+def floatInList(f, li):
+  for l in li:
+    if abs(float(l) - f) <= 0.009:
+      return True
+  return False
 
 
 def generateCharClasses(reciept, includeProducts=False):

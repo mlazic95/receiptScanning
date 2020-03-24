@@ -25,7 +25,7 @@ testFilePaths = []
 def main(args):
     fileNames = os.listdir(trainTextDir)
     fileNames = [i for i in fileNames if (i.endswith('.json'))]
-    for fileName in fileNames[0:10]:
+    for fileName in fileNames:
         with open(os.path.join(trainTextDir, fileName)) as text_json:
             text_data = json.load(text_json)
             text_data = tx.filterGarbage(text_data)
@@ -83,7 +83,7 @@ def main(args):
         for i, receipt in enumerate(test_reciepts):
             _ = data_gen.generateWordClasses(receipt)
         oracle(test_reciepts)
-
+    return
     t = 0
     for i,v in enumerate(test_reciepts[t].dataWords):
         print(v,'---', test_reciepts[t].dataLabels[i])

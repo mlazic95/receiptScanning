@@ -26,7 +26,12 @@ def oracle(reciepts):
     correctCurrencies = 0
     currenciesFound = 0
     currencies = 0
+
+    correctProducts = 0
+    productsFound = 0
+    products = 0
     for reciept in reciepts:
+        getProducts(reciept)
         vendor = getVendor(reciept)
         if 'vendor' in reciept.groundTruth:
             vendors += 1
@@ -71,6 +76,28 @@ def oracle(reciepts):
             currenciesFound+=1
             if currency == reciept.groundTruth['currency'].lower():
                 correctCurrencies +=1
+        productsList = getProducts(reciept)
+        if 'products' in reciept.groundTruth:
+            for product in reciept.groundTruth['products']:
+                products += 1
+        ## TODO: Make sure no double match
+        for product in productsList:
+            productsFound+=1
+            for real_product in reciept.groundTruth['products']:
+                price = None
+                if 'price' in product:
+                    price = product['price'].replace(',', '.')
+                    try:
+                        price = float(price)
+                    except:
+                        price = None
+                real_price = real_product['price']
+                real_price = float(real_price)
+                if product['name'].lower() == real_product['name'].lower():
+                    if util.floatCompare(price, real_price):
+                        correctProducts +=1
+                    else:
+                        print(price, real_price)
                 
     totalDataPoints = vendors + dates + addresses + taxes +  prices + currencies
     totalDataPointsFound = vendorsFound + datesFound + addressesFound + taxesFound + pricesFound + currenciesFound
@@ -118,6 +145,13 @@ def oracle(reciepts):
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
+    print('-----PRODUCTS-----')
+    print(products, productsFound, correctProducts)
+    precision = util.precision(correctProducts, productsFound)
+    recall = util.recall(products, correctProducts)
+    print('Precision:', precision)
+    print('Recall:', recall)
+    print('F1:', util.fScore(precision, recall))
     print('-----TOTAL-----')
     print(totalDataPoints, totalDataPointsFound, totalCorrect)
     precision = util.precision(totalCorrect, totalDataPointsFound)
@@ -147,13 +181,22 @@ def getAddress(reciept):
 
 def getProducts(reciept):
     products = []
-    product = ''
+    product_name = ''
+    product = {}
     for i, v in enumerate(reciept.dataWords):
-        if reciept.dataLabels[i] == 'product_price':
-            product+=v.lower() + ' '
-        elif product != '':
-            products.append(product[:-1])
-            product = ''
+        if reciept.dataLabels[i] == 'product_name':
+            product_name+=v.lower() + ' '
+        elif product_name != '':
+            product['name'] = product_name[:-1]
+            for j in range(i, len(reciept.dataWords)):
+                if reciept.dataLabels[j] == 'product_price':
+                    product['price'] = reciept.dataWords[j]
+                    break
+                elif reciept.dataLabels[j] == 'product_name':
+                    break
+            products.append(product)
+            product = {}
+            product_name = ''
     return products
 
 def getDate(reciept):

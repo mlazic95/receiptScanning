@@ -24,6 +24,27 @@ def height(wordBox):
 
     return y1-y2
 
+def isPriceFormat(s):
+    s = s.replace(',', '.')
+    try:
+        i = int(s)
+        return i < 99999
+    except:
+        try:
+            float(s)
+            return True
+        except:
+            return False
+
+    return False
+
+def floatCompare(f1, f2):
+    if f1 == f2:
+        return True
+    if not f1 or not f2:
+        return False
+    return abs(f1-f2) <= 0.009
+
 def getPriceFromLine(line):
     rawLine = ''
     for word in line:
