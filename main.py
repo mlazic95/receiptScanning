@@ -13,6 +13,8 @@ from oracle import oracle
 from data_extraction import extract, calculateMetrics
 import random
 from metric import calculateRuleBasedAccuracy, calculateLSTMaccuracy
+from data_creator import generateSintheticData
+import gcn_data_creator as gcn
 
 
 trainTextDir = "/Users/markolazic/Desktop/exjobb/project/data/train/text"
@@ -23,6 +25,8 @@ receipts = []
 testFilePaths = []
 
 def main(args):
+    print(gcn.isNumberwithDecimal('10.00'))
+    return
     fileNames = os.listdir(trainTextDir)
     fileNames = [i for i in fileNames if (i.endswith('.json'))]
     for fileName in fileNames:
@@ -30,7 +34,6 @@ def main(args):
             text_data = json.load(text_json)
             text_data = tx.filterGarbage(text_data)
             tx.calculateAngles(text_data)
-            tx.assignIds(text_data)
             tx.calculateCenterPoints(text_data)
             text_lines = tx.createLines(text_data)
             with open(os.path.join(trainLabelsDir, fileName.split('_')[0] + '_labels.json')) as ground_truth_json:
@@ -38,7 +41,7 @@ def main(args):
                 truth = tx.removeSwedishLetters(truth)
                 receipt = rc.Receipt(fileName,text_lines, truth)
                 receipts.append(receipt)
-    
+
     f=open('./data/test/test.txt',"r")
     for line in f:
         testFilePaths.append(line[:-1])
@@ -47,8 +50,19 @@ def main(args):
         if receipt.path in testFilePaths:
             test_reciepts.append(receipt)
 
+    if args[1] == 'generate_gcn_data':
+        test_data_dict = {}
+        train_data_dict = {}
+        for i, receipt in enumerate(receipts):
+            if receipt.path in testFilePaths:
+                test_data_dict[i] = data_gen.generateWordClasses(receipt)
+            else:
+                train_data_dict[i] = data_gen.generateWordClasses(receipt, correcting=False)
+
+        gcn.create(receipts, testFilePaths)
+
     if args[1] == 'create_result':
-        path = './data/results/100epochv2_corr'
+        path = './data/results/50epochsynt10000_prod'
         test_dict_path = os.path.join(path, 'res_dict.pth')
         res_dict = torch.load(test_dict_path)
         result = list(res_dict.items())
@@ -56,9 +70,13 @@ def main(args):
         for i, (_, (labels, words)) in enumerate(result):
             res = extract(labels,words)
             res_list.append(res)
-        calculateMetrics(test_reciepts, res_list, writeToFile=False, path=path)
+        calculateMetrics(test_reciepts, res_list, writeToFile=True, path=path)
 
     if args[1] == 'generate_word_data':
+        generateSynthetic = False
+        if args[2] and util.isInt(args[2]):
+            generateSynthetic = True
+            number = int(args[2])
         train_data_dict = {}
         test_data_dict = {}
         for i, receipt in enumerate(receipts):
@@ -66,8 +84,12 @@ def main(args):
                 test_data_dict[i] = data_gen.generateWordClasses(receipt)
             else:
                 train_data_dict[i] = data_gen.generateWordClasses(receipt, correcting=False)
-        vocab = data_gen.createVocabulary(receipts)
-        f=open('./data/corr_vocab.txt',"w+")
+        if generateSynthetic:
+            synthetic = generateSintheticData(receipts, number)
+            for i, receipt in enumerate(synthetic):
+                train_data_dict[i + len(receipts)] = (receipt.dataWords, receipt.dataLabels)
+        vocab = data_gen.createVocabulary(receipts + synthetic)
+        f=open('./data/synt_vocab.txt',"w+")
         for w in vocab:
             f.write(w + '\n')
         f.write('[UNK]' + '\n')
@@ -76,24 +98,18 @@ def main(args):
         f.write('[MASK]' + '\n')
         f.close()
 
-        torch.save(train_data_dict, "./data/corr_train_data_dict.pth")
-        torch.save(test_data_dict, "./data/corr_test_data_dict.pth")
+        torch.save(train_data_dict, "./data/synt_train_data_dict.pth")
+        torch.save(test_data_dict, "./data/synt_test_data_dict.pth")
 
     if args[1] == 'oracle':
         for i, receipt in enumerate(test_reciepts):
             _ = data_gen.generateWordClasses(receipt)
         oracle(test_reciepts)
-    return
-    t = 0
-    for i,v in enumerate(test_reciepts[t].dataWords):
-        print(v,'---', test_reciepts[t].dataLabels[i])
-    print(test_reciepts[t].groundTruth)
-    return
 
     if args[1] == 'rule_based':
-        for receipt in test_reciepts:
+        for receipt in receipts:
             predict(receipt)
-        calculateRuleBasedAccuracy(test_reciepts)
+        calculateRuleBasedAccuracy(receipts)
 
     if args[1] == 'create_lstm_result':
         result_jsons = os.listdir(lstmResultDir)

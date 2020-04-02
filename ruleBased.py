@@ -41,6 +41,6 @@ def predict(receipt):
     receipt.ruleBasedPrediction['address'] = address._result
 
     ## predict products
-    products = Products(receipt.rawText)
+    products = Products(receipt.rawText, receipt.lines, receipt.linesText)
     products.run()
     receipt.ruleBasedPrediction['products'] = products._result

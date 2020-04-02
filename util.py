@@ -2,11 +2,14 @@ import math
 import text_processor as tx
 import string
 import re
+import copy
 
 currencyList = ['SEK', 'DKK','CHF', 'EUR', 'USD', 'GBP', 'IDR']
 months = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', 'okt']
 totalKeywords = ['total', 'belopp', 'summa', 'betala', 'tot', 'kontokort', 'amount', 'net ']
 vowels = ['a', 'e', 'i', 'o', 'u']
+cities = ['stockholm','nacka','singapore', 'sppsala', 'engelberg', 'kobenhavn', 'danderyd', 'sundbyberg', 'copenhagen', 'skarholmen', 'johanneshov', 'solna', 'malmo', 'vasteras', 'norsborg', 'ronninge', 'hagersten', 'arsta', 'tyresa', 'farsta', 'varby', 'london', 'tignes']
+countries = ['sweden']
 
 def area(wordBox):
     x1 = float(wordBox["topLeft"][1:].split(',')[0])
@@ -24,11 +27,14 @@ def height(wordBox):
 
     return y1-y2
 
-def isPriceFormat(s):
-    s = s.replace(',', '.')
+def isPriceFormat(s, onlyFloats=False):
+    s = s.lower()
+    replace = [(',', '.'), ('kr', '')]
+    for r in replace:
+        s = s.replace(r[0], r[1])
     try:
         i = int(s)
-        return i < 99999
+        return i < 99999 and not onlyFloats
     except:
         try:
             float(s)
@@ -37,6 +43,25 @@ def isPriceFormat(s):
             return False
 
     return False
+
+def findLongestConsecutive(l):
+    if len(l) == 0:
+        return None
+    if len(l) == 1:
+        return (l[0],l[0])
+    longest = (0, 0)
+    current = (0, -1)
+    for t in l:
+        if t ==  current[1] + 1:
+            current = (current[0],t)
+            continue
+        elif current[1] - current[0] >= longest[1] - longest[0]:
+            longest = current
+        current = (t,t)
+
+    if current[1] - current[0] >= longest[1] - longest[0]:
+        longest = current
+    return longest
 
 def floatCompare(f1, f2):
     if f1 == f2:
@@ -178,7 +203,7 @@ def getRightNeighbour(word, words):
     for other in words:
         if word == other:
             continue
-        if word['center'][1] < other['center'][1] and tx.horizontalOverlap(word, other) > 0:
+        if word['center'][0] < other['center'][0] and tx.horizontalOverlap(word, other) > 0:
             dist = boxDistance(word, other)
             if dist < best[0]:
                 best = (dist, other)
@@ -189,7 +214,7 @@ def getLeftNeighbour(word, words):
     for other in words:
         if word == other:
             continue
-        if word['center'][1] > other['center'][1] and tx.horizontalOverlap(word, other) > 0:
+        if word['center'][0] > other['center'][0] and tx.horizontalOverlap(word, other) > 0:
             dist = boxDistance(word, other)
             if dist < best[0]:
                 best = (dist, other)
@@ -200,6 +225,31 @@ def getLineForWord(word, lines):
         if word in line:
             return i, line
     return None
+
+def breakTextBox(box):
+    boxes = []
+    text = box['text']
+    l = len(text)
+    start = float(box["topLeft"][1:].split(',')[0])
+    end = float(box["topRight"][1:].split(',')[0])
+    width = end - start
+    unitSize = width / l
+    words = text.split(' ')
+    breakPoints = [i for i in range(len(text)) if text[i] == ' ']
+    breakPointsStarts = [i * unitSize + start for i in breakPoints]
+    breakPointsStarts.append(end)
+    breakPointsStarts.reverse()
+    for word in words:
+        if word == '' or word == ' ':
+            continue
+        new_box = copy.deepcopy(box)
+        t_start = start
+        t_end = breakPointsStarts.pop()
+        new_box['center'] = ((t_start + t_end / 2), box['center'][1])
+        new_box['text'] = word
+        boxes.append(new_box)
+        start = (t_end + unitSize)
+    return boxes
 
 def getClassInt(c):
     if c == 'vendor':

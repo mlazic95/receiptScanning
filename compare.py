@@ -78,4 +78,20 @@ def address(a1, a2):
     return levenshtein_distance(a1,a2) <= 0
 
 def products(p1,p2):
-    return p1 == p2
+    #print(p1['name'].lower(),'---', p2['name'].lower())
+    n1 = p1['name'].lower()
+    n2 = p2['name'].lower()
+    if levenshtein_distance(n1,n2) <= 0:
+        try:
+            price1 = float(p1['price'].replace(',', '.'))
+        except:
+            return False
+        if util.floatCompare(price1, float(p2['price'])):
+            a1 = p1['amount'] 
+            a2 = p2['amount']
+            return a1 == a2
+    return False
+    if levenshtein_distance(n1,n2) <= 0:
+        return True
+    #print(p1,'---',p2)
+    return False

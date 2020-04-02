@@ -85,6 +85,7 @@ def generateWordClasses(reciept, correcting=False):
       labelsResult.append(label)
 
   textResult, labelsResult = findProductPrices(textResult, labelsResult, reciept)
+  textResult, labelsResult = findProductAmounts(textResult, labelsResult, reciept)
   reciept.dataWords = textResult
   reciept.dataLabels = labelsResult
   return (textResult, labelsResult)
@@ -101,8 +102,10 @@ def findProductPrices(textResult, labelsResult, reciept):
       productName+= text + ' '
     elif productName != '':
       productName = productName[:-1]
+      ### Find product price
       potentialPrices = [p['price'] for p in reciept.groundTruth['products'] if fuzz.ratio(p['name'], productName) > 75]
       l = len(productName)
+      foundPrice = False
       for i in range(len(lineText) - l):
         sub = lineText[i:i+l]
         if sub == productName and (i, i+l) not in foundRange:
@@ -113,10 +116,14 @@ def findProductPrices(textResult, labelsResult, reciept):
               restWords = rest.replace('\n', '').split(' ')
               price = None
               for word in restWords:
-                if util.isPriceFormat(word) and floatInList(float(word.replace(',', '.')),potentialPrices):
+                if util.isPriceFormat(word) and floatInList(word, potentialPrices):
                   price = word
+                  altPrice = float(price.lower().replace(',','.').replace('kr', ''))
+              if not price:
+                continue
               for s in range(index, len(textResult)):
-                if textResult[s] == price:
+                if textResult[s] == price or (util.isPriceFormat(textResult[s]) and float(textResult[s].lower().replace(',', '.').replace('kr', '')) == altPrice):
+                  foundPrice = True
                   labelsResult[s] = 'product_price'
                   break
               rest = ''
@@ -128,14 +135,61 @@ def findProductPrices(textResult, labelsResult, reciept):
 
   return textResult, labelsResult
 
+def findProductAmounts(textResult, labelsResult, reciept):
+  products = reciept.groundTruth['products']
+  productName = ''
+  lineText = reciept.linesText
+  prices = []
+  foundRange = []
+  for index, (text, label) in enumerate(zip(textResult, labelsResult)):
+    if label == 'product_name':
+      productName+= text + ' '
+    elif productName != '':
+      productName = productName[:-1]
+      ### Find product Amount
+      potentialAmounts = [p['amount'] for p in reciept.groundTruth['products'] if (fuzz.ratio(p['name'], productName) > 75 and 'amount' in p)]
+      if sum(potentialAmounts) <= len(potentialAmounts):
+        continue
+      l = len(productName)
+      for i in range(len(lineText) - l):
+        sub = lineText[i:i+l]
+        if sub == productName and (i, i+l) not in foundRange:
+          foundRange.append((i, i + l))
+          amount = None
+          rest = ''
+          lines = 0
+          for j in range(i - 10, len(lineText)):
+            if lines >= 3:
+              break
+            if lineText[j] == '\n':
+              lines +=1
+              restWords = rest.replace('\n', '').split(' ')
+              for word in restWords:
+                if util.isInt(word) and int(word) in potentialAmounts:
+                  amount = word
+              if not amount:
+                continue
+              for s in range(index -  10, len(textResult)):
+                if textResult[s] == amount:
+                  labelsResult[s] = 'product_amount'
+                  break
+              rest = ''
+              if amount:
+                break
+            rest += lineText[j]
+          break
+      productName = ''
+
+  return textResult, labelsResult
+  
+
 def createVocabulary(reciepts):
   vocab = set()
   for reciept in reciepts:
     words = reciept.dataWords
     for word in words:
       vocab.add(word)
-  '''
-  path = './data/corr_vocab.txt'
+  path = './data/prod_vocab.txt'
   with open(path, 'r') as f:
     for line in f:
       vocab.add(line[:-1])
@@ -150,16 +204,21 @@ def createVocabulary(reciepts):
         if v == '[UNK]' and i < len(t):
           for x in t:
             new_set.add(x)
-  with open('./data/corr_vocab.txt', 'w+') as f:
+  with open('./data/prod_vocab.txt', 'w+') as f:
     for word in (vocab.union(new_set)):
       f.write(word  + '\n')
-  '''
   return vocab
 
 
-def floatInList(f, li):
+def floatInList(s, li):
+  s = s.lower().replace(',', '.').replace('kr', '')
+  try:
+    f = float(s)
+  except:
+    print('EXCEPTION')
+    return False
   for l in li:
-    if abs(float(l) - f) <= 0.009:
+    if abs(float(l) - f) <= 1:
       return True
   return False
 

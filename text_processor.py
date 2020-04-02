@@ -20,10 +20,6 @@ def calculateAngles(data):
         rotation = math.atan(diffs[0]/diffs[1])
         box['angle'] = rotation
 
-def assignIds(data):
-    for i, word in enumerate(data):
-        word['id'] = i
-
 def calculateCenterPoints(data):
     for box in data:
         x1 = float(box["topLeft"][1:].split(',')[0])
@@ -45,11 +41,16 @@ def removeSwedishLetters(data):
     keys = data.keys()
     for key in keys:
         if key == 'products':
-            continue
-        text = re.sub(r'ä|Ä','a', data[key])
-        text = re.sub(r'ö|Ö','o',text)
-        text = re.sub(r'å|Å','a',text)
-        data[key] = text
+            for prod in data[key]:
+                name = re.sub(r'ä|Ä','a', prod['name'])
+                name = re.sub(r'ö|Ö','o',name)
+                name = re.sub(r'å|Å','a',name)
+                prod['name'] = name
+        else:
+            text = re.sub(r'ä|Ä','a', data[key])
+            text = re.sub(r'ö|Ö','o',text)
+            text = re.sub(r'å|Å','a',text)
+            data[key] = text
     return data
 
 

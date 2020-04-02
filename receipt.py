@@ -1,5 +1,6 @@
 from itertools import chain
 import util
+import copy
 
 class Receipt:
     def __init__(self, path, lines, groundTruth):
@@ -8,11 +9,32 @@ class Receipt:
         self.groundTruth = groundTruth
         self.ruleBasedPrediction = {}
         self.rawText = self.concatinateText()
-        self.words = list(chain.from_iterable(self.lines))
-        self.graph = self.createGraph()
+        self.words = self.createIndexedWordList(lines)
+        self.sepWords = self.createIndexedWordList(lines, breakWords=True)
+        #self.graph = self.createGraph()
         self.linesText = self.concatinateText(perserveLines=True)
         self.dataWords = []
         self.dataLabels = []
+
+    def createIndexedWordList(self, lines, breakWords=False):
+        words = []
+        for i, line in enumerate(lines):
+            for word in line:
+                if breakWords:
+                    breaked = word['text'].split(' ')
+                    if len(breaked) > 1:
+                        breaked = util.breakTextBox(word)
+                        for subWord in breaked:
+                            words.append(subWord)
+                    else:
+                        word['line'] = i
+                        words.append(word)
+                else:
+                    word['line'] = i
+                    words.append(word)
+        for i, word in enumerate(words):
+            word['id'] = i
+        return words
     
     def concatinateText(self, perserveLines=False):
         text = ""
@@ -23,17 +45,36 @@ class Receipt:
                 text+='\n'
         return text
 
+    def filterWordsForGraph(self):
+        words = []
+        lastFound = 0
+        finalWords = self.dataWords
+        for i in range(len(finalWords)):
+            for j in range(lastFound, len(self.sepWords)):
+                if finalWords[i] == self.sepWords[j]['text']:
+                    self.sepWords[j]['label'] = self.dataLabels[i]
+                    words.append(self.sepWords[j])
+                    lastFound = j + 1
+                    break
+
+        self.graphWords = words
+
     def createGraph(self):
         graph = {}
-        for word in self.words:
+        for word in self.graphWords:
             graph[word['id']] = {}
-            lineIndex, line = util.getLineForWord(word, self.lines)
+            lineIndex = word['line']
+            line = [w for w in self.sepWords if w['line'] == lineIndex]
+            #print(word['text'])
+            #print([t['text'] for t in line])
+            previusLine = [w for w in self.sepWords if w['line'] == lineIndex - 1]
+            nextLine = [w for w in self.sepWords if w['line'] == lineIndex + 1]
             ## Find neighbours
-            top = util.getTopNeighbour(word, self.lines[lineIndex-1] if lineIndex > 0 else [])
+            top = util.getTopNeighbour(word, previusLine)
             if top:
                 graph[word['id']]['top'] = top
             
-            bottom = util.getBottomNeighbour(word, self.lines[lineIndex+1] if lineIndex < len(self.lines) - 1 else [])
+            bottom = util.getBottomNeighbour(word, nextLine)
             if bottom:
                 graph[word['id']]['bottom'] = bottom
 
@@ -44,7 +85,7 @@ class Receipt:
             right = util.getRightNeighbour(word, line)
             if right:
                 graph[word['id']]['right'] = right
-        return graph
+        self.graph = graph
 
 
 

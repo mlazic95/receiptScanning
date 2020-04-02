@@ -80,10 +80,12 @@ def oracle(reciepts):
         if 'products' in reciept.groundTruth:
             for product in reciept.groundTruth['products']:
                 products += 1
-        ## TODO: Make sure no double match
+        checkedIndexes = []
         for product in productsList:
             productsFound+=1
-            for real_product in reciept.groundTruth['products']:
+            for i, real_product in enumerate(reciept.groundTruth['products']):
+                if i in checkedIndexes:
+                    continue
                 price = None
                 if 'price' in product:
                     price = product['price'].replace(',', '.')
@@ -95,14 +97,16 @@ def oracle(reciepts):
                 real_price = float(real_price)
                 if product['name'].lower() == real_product['name'].lower():
                     if util.floatCompare(price, real_price):
-                        correctProducts +=1
-                    else:
-                        print(price, real_price)
+                        if product['amount'] == real_product['amount']:
+                            correctProducts +=1
+                            checkedIndexes.append(i)
+                            break
+
                 
-    totalDataPoints = vendors + dates + addresses + taxes +  prices + currencies
-    totalDataPointsFound = vendorsFound + datesFound + addressesFound + taxesFound + pricesFound + currenciesFound
-    totalCorrect = correctVendors + correctDates + correctAddresses + correctTaxes + correctPrices + correctCurrencies
-        
+    totalDataPoints = vendors + dates + addresses + taxes +  prices + currencies + products
+    totalDataPointsFound = vendorsFound + datesFound + addressesFound + taxesFound + pricesFound + currenciesFound + productsFound
+    totalCorrect = correctVendors + correctDates + correctAddresses + correctTaxes + correctPrices + correctCurrencies + correctProducts
+
     print('-----VENDORS-----')
     print(vendors, vendorsFound, correctVendors)
     precision = util.precision(correctVendors, vendorsFound)
@@ -184,16 +188,28 @@ def getProducts(reciept):
     product_name = ''
     product = {}
     for i, v in enumerate(reciept.dataWords):
+        if reciept.dataLabels[i] == 'product_amount':
+            product['amount'] = v
         if reciept.dataLabels[i] == 'product_name':
             product_name+=v.lower() + ' '
         elif product_name != '':
             product['name'] = product_name[:-1]
             for j in range(i, len(reciept.dataWords)):
+                if reciept.dataLabels[j] == 'product_amount':
+                    if util.isInt(v):
+                        product['amount'] = int(v)
+                    else:
+                        product['amount'] = v
+                    if 'price' in product:
+                        break
                 if reciept.dataLabels[j] == 'product_price':
                     product['price'] = reciept.dataWords[j]
-                    break
+                    if 'amount' in product:
+                        break
                 elif reciept.dataLabels[j] == 'product_name':
                     break
+            if not 'amount' in product:
+                product['amount'] = 1
             products.append(product)
             product = {}
             product_name = ''

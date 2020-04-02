@@ -183,6 +183,10 @@ def calculateRuleBasedAccuracy(receipts):
     address_found = 0
     address_correct = 0
 
+    products_total = 0
+    products_found = 0
+    products_correct = 0
+
     for receipt in receipts:
         ## Check total price
         if 'total_price' in receipt.ruleBasedPrediction:
@@ -250,6 +254,25 @@ def calculateRuleBasedAccuracy(receipts):
             address_total+=1
             if compare.address(receipt.groundTruth['address'], address):
                 address_correct += 1
+        ## Check products
+        if 'products' in receipt.ruleBasedPrediction:
+            products = receipt.ruleBasedPrediction['products']
+        else:
+            products = []
+        found = []
+        if 'products' in receipt.groundTruth:
+            products_total+= len(receipt.groundTruth['products'])
+        for product in products:
+            products_found += 1
+            if 'products' in receipt.groundTruth:
+                real_products = receipt.groundTruth['products']
+                for j,real_product in enumerate(real_products):
+                    if j in found:
+                        continue
+                    if compare.products(product, real_product):
+                        found.append(j)
+                        products_correct += 1
+                        break
     totalDataPoints = vendor_total + date_total + address_total + tax_rate_total +  total_price_total + currency_total
     totalDataPointsFound = vendor_found + date_found + address_found + tax_rate_found + total_price_found + currency_found
     totalCorrect = vendor_correct + date_correct + address_correct + tax_rate_correct + total_price_correct + currency_correct
@@ -293,6 +316,13 @@ def calculateRuleBasedAccuracy(receipts):
     print(currency_total, currency_found, currency_correct)
     precision = util.precision(currency_correct, currency_found)
     recall = util.recall(currency_total, currency_correct)
+    print('Precision:', precision)
+    print('Recall:', recall)
+    print('F1:', util.fScore(precision, recall))
+    print('-----PRODUCTS-----')
+    print(products_total, products_found, products_correct)
+    precision = util.precision(products_correct, products_found)
+    recall = util.recall(products_total, products_correct)
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
