@@ -25,8 +25,6 @@ receipts = []
 testFilePaths = []
 
 def main(args):
-    print(gcn.isNumberwithDecimal('10.00'))
-    return
     fileNames = os.listdir(trainTextDir)
     fileNames = [i for i in fileNames if (i.endswith('.json'))]
     for fileName in fileNames:
@@ -38,10 +36,11 @@ def main(args):
             text_lines = tx.createLines(text_data)
             with open(os.path.join(trainLabelsDir, fileName.split('_')[0] + '_labels.json')) as ground_truth_json:
                 truth = json.load(ground_truth_json)
+                if 'total_price' in truth and float(truth['total_price']) == 677:
+                    print(fileName)
                 truth = tx.removeSwedishLetters(truth)
                 receipt = rc.Receipt(fileName,text_lines, truth)
                 receipts.append(receipt)
-
     f=open('./data/test/test.txt',"r")
     for line in f:
         testFilePaths.append(line[:-1])
@@ -49,6 +48,12 @@ def main(args):
     for receipt in receipts:
         if receipt.path in testFilePaths:
             test_reciepts.append(receipt)
+
+
+    if args[1] == 'create_data_statistics':
+        stats = util.create_data_statistics(receipts, 'address')
+        for k, v in sorted(stats.items(), reverse = True, key=lambda item: item[1]):
+                print(k, '---', v)
 
     if args[1] == 'generate_gcn_data':
         test_data_dict = {}

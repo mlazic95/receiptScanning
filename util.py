@@ -149,6 +149,14 @@ def isInt(s):
     except:
         return False
 
+def isFloat(s):
+    s = s.replace(',', '.')
+    try:
+        s = float(s)
+        return True
+    except:
+        return False
+
 def vowelRatio(s):
     s = s.lower()
     count = 0.0
@@ -185,7 +193,7 @@ def getTopNeighbour(word, words):
             dist = boxDistance(word, other)
             if dist < best[0]:
                 best = (dist, other)
-    return best[1]
+    return best
 
 def getBottomNeighbour(word, words):
     best = (1, None)
@@ -196,7 +204,7 @@ def getBottomNeighbour(word, words):
             dist = boxDistance(word, other)
             if dist < best[0]:
                 best = (dist, other)
-    return best[1]
+    return best
 
 def getRightNeighbour(word, words):
     best = (1, None)
@@ -207,7 +215,7 @@ def getRightNeighbour(word, words):
             dist = boxDistance(word, other)
             if dist < best[0]:
                 best = (dist, other)
-    return best[1]
+    return best
 
 def getLeftNeighbour(word, words):
     best = (1, None)
@@ -218,7 +226,7 @@ def getLeftNeighbour(word, words):
             dist = boxDistance(word, other)
             if dist < best[0]:
                 best = (dist, other)
-    return best[1]
+    return best
 
 def getLineForWord(word, lines):
     for i,line in enumerate(lines):
@@ -282,3 +290,14 @@ def fScore(prec, rec):
         return 0
     return 2*(prec * rec) / (prec + rec)
 
+def create_data_statistics(receipts, className):
+    class_dict = {}
+    for receipt in receipts:
+        truth = receipt.groundTruth
+        if className in truth:
+            t_class = truth[className].lower()
+            if t_class in class_dict:
+                class_dict[t_class] +=1
+            else:
+                class_dict[t_class] = 1
+    return class_dict

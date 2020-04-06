@@ -64,26 +64,26 @@ class Receipt:
         for word in self.graphWords:
             graph[word['id']] = {}
             lineIndex = word['line']
-            line = [w for w in self.sepWords if w['line'] == lineIndex]
+            line = [w for w in self.graphWords if w['line'] == lineIndex]
             #print(word['text'])
             #print([t['text'] for t in line])
-            previusLine = [w for w in self.sepWords if w['line'] == lineIndex - 1]
-            nextLine = [w for w in self.sepWords if w['line'] == lineIndex + 1]
+            previusLine = [w for w in self.graphWords if w['line'] == lineIndex - 1]
+            nextLine = [w for w in self.graphWords if w['line'] == lineIndex + 1]
             ## Find neighbours
             top = util.getTopNeighbour(word, previusLine)
-            if top:
+            if top[1]:
                 graph[word['id']]['top'] = top
             
             bottom = util.getBottomNeighbour(word, nextLine)
-            if bottom:
+            if bottom[1]:
                 graph[word['id']]['bottom'] = bottom
 
             left = util.getLeftNeighbour(word, line)
-            if left:
+            if left[1]:
                 graph[word['id']]['left'] = left
             
             right = util.getRightNeighbour(word, line)
-            if right:
+            if right[1]:
                 graph[word['id']]['right'] = right
         self.graph = graph
 
