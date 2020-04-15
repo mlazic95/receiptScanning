@@ -11,7 +11,7 @@ class Receipt:
         self.rawText = self.concatinateText()
         self.words = self.createIndexedWordList(lines)
         self.sepWords = self.createIndexedWordList(lines, breakWords=True)
-        #self.graph = self.createGraph()
+        self.graph = []
         self.linesText = self.concatinateText(perserveLines=True)
         self.dataWords = []
         self.dataLabels = []

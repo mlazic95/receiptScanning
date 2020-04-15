@@ -74,10 +74,10 @@ class TaxRate(prediction.Prediction):
                         if match in elem['text']:
                             temp = re.sub(r'%', '', match)
                             temp = re.sub(r',', '.', temp)
-                            if util.neighbourContains(self.__outer._graph[elem['id']], 'Moms') and float(temp) < 30.0:
-                                self.__outer._result = m[i]
-                                self._status = bt.Status.SUCCESS
-                                return
+                            #if util.neighbourContains(self.__outer._graph[elem['id']], 'Moms') and float(temp) < 30.0:
+                                #self.__outer._result = m[i]
+                                #self._status = bt.Status.SUCCESS
+                                #return
                 for match in m:
                     match = re.sub(r'%', '', match)
                     match = re.sub(r',', '.', match)
@@ -111,10 +111,10 @@ class TaxRate(prediction.Prediction):
                     for elem in self.__outer._words:
                         if match in elem['text']:
                             temp = re.sub(r',', '.', match)
-                            if util.neighbourContains(self.__outer._graph[elem['id']], 'Moms') and float(temp) < 30.0:
-                                self.__outer._result = m[i]
-                                self._status = bt.Status.SUCCESS
-                                return
+                            #if util.neighbourContains(self.__outer._graph[elem['id']], 'Moms') and float(temp) < 30.0:
+                                #self.__outer._result = m[i]
+                                #self._status = bt.Status.SUCCESS
+                                #return
                 for match in m:
                     match = re.sub(r'%', '', match)
                     match = re.sub(r',', '.', match)

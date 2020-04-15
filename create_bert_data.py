@@ -234,18 +234,30 @@ def generateCharClasses(reciept, includeProducts=False):
     for key in keys:
       if key == 'products' and not includeProducts:
           continue
-      classValue = reciept.groundTruth[key]
-      l = len(classValue)
-      minDist = l
-      start = 0
-      for i in range(len(text) - l):
-        sub = text[i:i+l]
-        dist = levenshtein_distance(sub, classValue)
-        if dist < minDist:
-          minDist = dist
-          start = i
-      for i in range(start, start + len(classValue)):
-        classes[i] = util.getClassInt(key)
+      classValues = []
+      classKeys = []
+      if key == 'products':
+          for prod in reciept.groundTruth[key]:
+            classValues.append(prod['name'])
+            classKeys.append('product_name')
+
+            classValues.append("{:.2f}".format(prod['price']))
+            classKeys.append('product_price')
+      else:
+        classValues.append(reciept.groundTruth[key])
+        classKeys.append(key)
+      for k, v in zip(classKeys, classValues):
+        l = len(v)
+        minDist = l
+        start = 0
+        for i in range(len(text) - l):
+          sub = text[i:i+l]
+          dist = levenshtein_distance(sub, v)
+          if dist < minDist:
+            minDist = dist
+            start = i
+        for i in range(start, start + len(v)):
+          classes[i] = util.getClassInt(k)
      
     return (text, classes)
 

@@ -36,11 +36,10 @@ def main(args):
             text_lines = tx.createLines(text_data)
             with open(os.path.join(trainLabelsDir, fileName.split('_')[0] + '_labels.json')) as ground_truth_json:
                 truth = json.load(ground_truth_json)
-                if 'total_price' in truth and float(truth['total_price']) == 677:
-                    print(fileName)
                 truth = tx.removeSwedishLetters(truth)
                 receipt = rc.Receipt(fileName,text_lines, truth)
                 receipts.append(receipt)
+                
     f=open('./data/test/test.txt',"r")
     for line in f:
         testFilePaths.append(line[:-1])
@@ -51,7 +50,7 @@ def main(args):
 
 
     if args[1] == 'create_data_statistics':
-        stats = util.create_data_statistics(receipts, 'address')
+        stats = util.create_data_statistics(receipts, 'vendor')
         for k, v in sorted(stats.items(), reverse = True, key=lambda item: item[1]):
                 print(k, '---', v)
 
@@ -67,7 +66,7 @@ def main(args):
         gcn.create(receipts, testFilePaths)
 
     if args[1] == 'create_result':
-        path = './data/results/50epochsynt10000_prod'
+        path = './data/results/100epochv2_prod'
         test_dict_path = os.path.join(path, 'res_dict.pth')
         res_dict = torch.load(test_dict_path)
         result = list(res_dict.items())
@@ -112,9 +111,9 @@ def main(args):
         oracle(test_reciepts)
 
     if args[1] == 'rule_based':
-        for receipt in receipts:
+        for receipt in test_reciepts:
             predict(receipt)
-        calculateRuleBasedAccuracy(receipts)
+        calculateRuleBasedAccuracy(test_reciepts)
 
     if args[1] == 'create_lstm_result':
         result_jsons = os.listdir(lstmResultDir)
@@ -132,11 +131,11 @@ def main(args):
         test_data_dict = {}
         for i, receipt in enumerate(receipts):
             if receipt.path in testFilePaths:
-                test_data_dict[i] = data_gen.generateCharClasses(receipt)
+                test_data_dict[i] = data_gen.generateCharClasses(receipt, includeProducts=True)
             else:
-                train_data_dict[i] = data_gen.generateCharClasses(receipt)
-        torch.save(train_data_dict, "/Users/markolazic/Desktop/sroie-task3/data/train_char_data.pth")
-        torch.save(test_data_dict, "/Users/markolazic/Desktop/sroie-task3/data/test_char_data.pth")
+                train_data_dict[i] = data_gen.generateCharClasses(receipt, includeProducts=True)
+        torch.save(train_data_dict, "/Users/markolazic/Desktop/sroie-task3/data/train_char_data_prod.pth")
+        torch.save(test_data_dict, "/Users/markolazic/Desktop/sroie-task3/data/test_char_data_prod.pth")
 
 
 if __name__ == '__main__':

@@ -75,13 +75,13 @@ def address(a1, a2):
         return False
     a1 = a1.lower()
     a2 = a2.lower()
-    return levenshtein_distance(a1,a2) <= 0
+    return levenshtein_distance(a1,a2) <= 3
 
 def products(p1,p2):
     #print(p1['name'].lower(),'---', p2['name'].lower())
     n1 = p1['name'].lower()
     n2 = p2['name'].lower()
-    if levenshtein_distance(n1,n2) <= 0:
+    if levenshtein_distance(n1,n2) <= 3:
         try:
             price1 = float(p1['price'].replace(',', '.'))
         except:

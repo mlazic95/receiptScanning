@@ -272,6 +272,12 @@ def getClassInt(c):
         return 5
     elif c == 'currency':
         return 6
+    elif c == 'product_name':
+        return 7
+    elif c == 'product_price':
+        return 8
+    elif c == 'product_amount':
+        return 9
     return 0
 
 

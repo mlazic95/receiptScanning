@@ -1,5 +1,6 @@
 import os
 import util
+from Levenshtein import distance as levenshtein_distance
 
 
 def oracle(reciepts):
@@ -30,15 +31,22 @@ def oracle(reciepts):
     correctProducts = 0
     productsFound = 0
     products = 0
+
+    count = 0
     for reciept in reciepts:
+        corr = True
         getProducts(reciept)
         vendor = getVendor(reciept)
         if 'vendor' in reciept.groundTruth:
             vendors += 1
         if vendor:
             vendorsFound+=1
-            if vendor == reciept.groundTruth['vendor'].lower():
+            if levenshtein_distance(vendor, reciept.groundTruth['vendor'].lower()) <= 0:
                 correctVendors +=1
+            else:
+                corr = False
+        elif 'vendor' in reciept.groundTruth:
+            corr = False
         date = getDate(reciept)
         if 'date' in reciept.groundTruth:
             dates += 1
@@ -46,13 +54,21 @@ def oracle(reciepts):
             datesFound+=1
             if date == reciept.groundTruth['date'].lower():
                 correctDates +=1
+            else:
+                corr = False
+        elif 'date' in reciept.groundTruth:
+            corr = False
         address = getAddress(reciept)
         if 'address' in reciept.groundTruth:
             addresses += 1
         if address:
             addressesFound+=1
-            if address == reciept.groundTruth['address'].lower():
+            if levenshtein_distance(address, reciept.groundTruth['address'].lower()) <= 0:
                 correctAddresses +=1
+            else:
+                corr = False
+        elif 'address' in reciept.groundTruth:
+            corr = False
         tax = getTaxRate(reciept)
         if 'tax_rate' in reciept.groundTruth:
             taxes += 1
@@ -61,6 +77,10 @@ def oracle(reciepts):
             real_tax = reciept.groundTruth['tax_rate'].lower().replace('%', '').replace('.', '')
             if tax == real_tax:
                 correctTaxes +=1
+            else:
+                corr = False
+        elif 'tax_rate' in reciept.groundTruth:
+            corr = False
         price = getTotalPrice(reciept)
         if 'total_price' in reciept.groundTruth:
             prices += 1
@@ -69,6 +89,10 @@ def oracle(reciepts):
             real_price = reciept.groundTruth['total_price'].lower().replace('.', '')
             if price == real_price:
                 correctPrices +=1
+            else:
+                corr = False
+        elif 'total_price' in reciept.groundTruth:
+            corr = False
         currency = getCurrency(reciept)
         if 'currency' in reciept.groundTruth:
             currencies += 1
@@ -76,6 +100,10 @@ def oracle(reciepts):
             currenciesFound+=1
             if currency == reciept.groundTruth['currency'].lower():
                 correctCurrencies +=1
+            else:
+                corr = False
+        elif 'currency' in reciept.groundTruth:
+            corr = False
         productsList = getProducts(reciept)
         if 'products' in reciept.groundTruth:
             for product in reciept.groundTruth['products']:
@@ -95,22 +123,33 @@ def oracle(reciepts):
                         price = None
                 real_price = real_product['price']
                 real_price = float(real_price)
-                if product['name'].lower() == real_product['name'].lower():
+                if levenshtein_distance(product['name'].lower(), real_product['name'].lower()) <= 0:
                     if util.floatCompare(price, real_price):
                         if product['amount'] == real_product['amount']:
                             correctProducts +=1
                             checkedIndexes.append(i)
                             break
+        if 'products' in reciept.groundTruth:
+            if len(checkedIndexes) < len(reciept.groundTruth['products']):
+                corr = False
+        if corr:
+            count += 1
 
                 
     totalDataPoints = vendors + dates + addresses + taxes +  prices + currencies + products
     totalDataPointsFound = vendorsFound + datesFound + addressesFound + taxesFound + pricesFound + currenciesFound + productsFound
     totalCorrect = correctVendors + correctDates + correctAddresses + correctTaxes + correctPrices + correctCurrencies + correctProducts
 
+    print('-----TOTAL CORRECT RECEIPTS-----')
+    print(count, 'of', len(reciepts))
+    total_precision = 0
+    total_recall = 0
     print('-----VENDORS-----')
     print(vendors, vendorsFound, correctVendors)
     precision = util.precision(correctVendors, vendorsFound)
     recall = util.recall(vendors, correctVendors)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -118,6 +157,8 @@ def oracle(reciepts):
     print(dates, datesFound, correctDates)
     precision = util.precision(correctDates, datesFound)
     recall = util.recall(dates, correctDates)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -125,6 +166,8 @@ def oracle(reciepts):
     print(addresses, addressesFound, correctAddresses)
     precision = util.precision(correctAddresses, addressesFound)
     recall = util.recall(addresses, correctAddresses)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -132,6 +175,8 @@ def oracle(reciepts):
     print(taxes, taxesFound, correctTaxes)
     precision = util.precision(correctTaxes, taxesFound)
     recall = util.recall(taxes, correctTaxes)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -139,6 +184,8 @@ def oracle(reciepts):
     print(prices, pricesFound, correctPrices)
     precision = util.precision(correctPrices, pricesFound)
     recall = util.recall(prices, correctPrices)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -146,6 +193,8 @@ def oracle(reciepts):
     print(currencies, currenciesFound, correctCurrencies)
     precision = util.precision(correctCurrencies, currenciesFound)
     recall = util.recall(currencies, correctCurrencies)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -153,13 +202,22 @@ def oracle(reciepts):
     print(products, productsFound, correctProducts)
     precision = util.precision(correctProducts, productsFound)
     recall = util.recall(products, correctProducts)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
-    print('-----TOTAL-----')
+    print('----- MICRO TOTAL-----')
     print(totalDataPoints, totalDataPointsFound, totalCorrect)
     precision = util.precision(totalCorrect, totalDataPointsFound)
     recall = util.recall(totalDataPoints, totalCorrect)
+    print('Precision:', precision)
+    print('Recall:', recall)
+    print('F1:', util.fScore(precision, recall))
+    print('----- MACRO TOTAL-----')
+    print(totalDataPoints, totalDataPointsFound, totalCorrect)
+    precision = total_precision / 7.0
+    recall = total_recall / 7.0
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))

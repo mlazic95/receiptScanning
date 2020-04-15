@@ -107,11 +107,16 @@ def calculateLSTMaccuracy(receipts, results):
     totalDataPoints = vendor_total + date_total + address_total + tax_rate_total +  total_price_total + currency_total
     totalDataPointsFound = vendor_found + date_found + address_found + tax_rate_found + total_price_found + currency_found
     totalCorrect = vendor_correct + date_correct + address_correct + tax_rate_correct + total_price_correct + currency_correct
+
+    total_precision = 0
+    total_recall = 0
       
     print('-----VENDORS-----')
     print(vendor_total, vendor_found, vendor_correct)
     precision = util.precision(vendor_correct, vendor_found)
     recall = util.recall(vendor_total, vendor_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -150,7 +155,14 @@ def calculateLSTMaccuracy(receipts, results):
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
-    print('-----TOTAL-----')
+    print('-----MICRO AVG-----')
+    print(totalDataPoints, totalDataPointsFound, totalCorrect)
+    precision = util.precision(totalCorrect, totalDataPointsFound)
+    recall = util.recall(totalDataPoints, totalCorrect)
+    print('Precision:', precision)
+    print('Recall:', recall)
+    print('F1:', util.fScore(precision, recall))
+    print('-----MACRO AVG-----')
     print(totalDataPoints, totalDataPointsFound, totalCorrect)
     precision = util.precision(totalCorrect, totalDataPointsFound)
     recall = util.recall(totalDataPoints, totalCorrect)
@@ -187,7 +199,9 @@ def calculateRuleBasedAccuracy(receipts):
     products_found = 0
     products_correct = 0
 
+    count = 0
     for receipt in receipts:
+        corr = True
         ## Check total price
         if 'total_price' in receipt.ruleBasedPrediction:
             price = receipt.ruleBasedPrediction['total_price']
@@ -199,6 +213,8 @@ def calculateRuleBasedAccuracy(receipts):
             total_price_total+= 1
             if compare.totalPrice(receipt.groundTruth['total_price'], price):
                 total_price_correct += 1
+            else:
+                corr = False
         ## Check currecy
         if 'currency' in receipt.ruleBasedPrediction:
             currency = receipt.ruleBasedPrediction['currency']
@@ -210,6 +226,8 @@ def calculateRuleBasedAccuracy(receipts):
             currency_total+=1
             if compare.currency(receipt.groundTruth['currency'], currency):
                 currency_correct += 1
+            else:
+                corr = False
         ## Check date
         if 'date' in receipt.ruleBasedPrediction:
             date = receipt.ruleBasedPrediction['date']
@@ -221,6 +239,8 @@ def calculateRuleBasedAccuracy(receipts):
             date_total+=1
             if compare.date(receipt.groundTruth['date'],date):
                 date_correct += 1
+            else:
+                corr = False
         ## Check vendor
         if 'vendor' in receipt.ruleBasedPrediction:
             vendor = receipt.ruleBasedPrediction['vendor']
@@ -232,6 +252,8 @@ def calculateRuleBasedAccuracy(receipts):
             vendor_total+=1
             if compare.vendor(receipt.groundTruth['vendor'], vendor):
                 vendor_correct += 1
+            else:
+                corr = False
         ## Check tax rate
         if 'tax_rate' in receipt.ruleBasedPrediction:
             tax = receipt.ruleBasedPrediction['tax_rate']
@@ -243,6 +265,8 @@ def calculateRuleBasedAccuracy(receipts):
             tax_rate_total+=1
             if compare.taxRate(receipt.groundTruth['tax_rate'], tax):
                 tax_rate_correct += 1
+            else:
+                corr = False
         ## Check address
         if 'address' in receipt.ruleBasedPrediction:
             address = receipt.ruleBasedPrediction['address']
@@ -254,6 +278,8 @@ def calculateRuleBasedAccuracy(receipts):
             address_total+=1
             if compare.address(receipt.groundTruth['address'], address):
                 address_correct += 1
+            else:
+                corr = False
         ## Check products
         if 'products' in receipt.ruleBasedPrediction:
             products = receipt.ruleBasedPrediction['products']
@@ -273,14 +299,26 @@ def calculateRuleBasedAccuracy(receipts):
                         found.append(j)
                         products_correct += 1
                         break
-    totalDataPoints = vendor_total + date_total + address_total + tax_rate_total +  total_price_total + currency_total
-    totalDataPointsFound = vendor_found + date_found + address_found + tax_rate_found + total_price_found + currency_found
-    totalCorrect = vendor_correct + date_correct + address_correct + tax_rate_correct + total_price_correct + currency_correct
-      
+        if 'products' in receipt.groundTruth:
+            if len(found) < len(receipt.groundTruth['products']):
+                corr = False
+        if corr:
+            count+=1
+    totalDataPoints = vendor_total + date_total + address_total + tax_rate_total +  total_price_total + currency_total + products_total
+    totalDataPointsFound = vendor_found + date_found + address_found + tax_rate_found + total_price_found + currency_found + products_found
+    totalCorrect = vendor_correct + date_correct + address_correct + tax_rate_correct + total_price_correct + currency_correct + products_correct
+    
+    total_precision = 0
+    total_recall = 0
+
+    print('-----TOTAL CORRECT RECEIPTS-----')
+    print(count, 'of', len(receipts))
     print('-----VENDORS-----')
     print(vendor_total, vendor_found, vendor_correct)
     precision = util.precision(vendor_correct, vendor_found)
     recall = util.recall(vendor_total, vendor_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -288,6 +326,8 @@ def calculateRuleBasedAccuracy(receipts):
     print(date_total, date_found, date_correct)
     precision = util.precision(date_correct, date_found)
     recall = util.recall(date_total, date_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -295,6 +335,8 @@ def calculateRuleBasedAccuracy(receipts):
     print(address_total, address_found, address_correct)
     precision = util.precision(address_correct, address_found)
     recall = util.recall(address_total, address_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -302,6 +344,8 @@ def calculateRuleBasedAccuracy(receipts):
     print(tax_rate_total, tax_rate_found, tax_rate_correct)
     precision = util.precision(tax_rate_correct, tax_rate_found)
     recall = util.recall(tax_rate_total, tax_rate_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -309,6 +353,8 @@ def calculateRuleBasedAccuracy(receipts):
     print(total_price_total, total_price_found, total_price_correct)
     precision = util.precision(total_price_correct, total_price_found)
     recall = util.recall(total_price_total, total_price_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -316,6 +362,8 @@ def calculateRuleBasedAccuracy(receipts):
     print(currency_total, currency_found, currency_correct)
     precision = util.precision(currency_correct, currency_found)
     recall = util.recall(currency_total, currency_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -323,13 +371,24 @@ def calculateRuleBasedAccuracy(receipts):
     print(products_total, products_found, products_correct)
     precision = util.precision(products_correct, products_found)
     recall = util.recall(products_total, products_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
-    print('-----TOTAL-----')
+    print('-----MICRO AVG-----')
     print(totalDataPoints, totalDataPointsFound, totalCorrect)
     precision = util.precision(totalCorrect, totalDataPointsFound)
     recall = util.recall(totalDataPoints, totalCorrect)
+    total_precision += precision
+    total_recall += recall
+    print('Precision:', precision)
+    print('Recall:', recall)
+    print('F1:', util.fScore(precision, recall))
+    print('-----MACRO AVG-----')
+    print(totalDataPoints, totalDataPointsFound, totalCorrect)
+    precision = total_precision / 7.0
+    recall = total_recall / 7.0
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
