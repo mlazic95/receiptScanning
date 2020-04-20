@@ -15,11 +15,15 @@ import random
 from metric import calculateRuleBasedAccuracy, calculateLSTMaccuracy
 from data_creator import generateSintheticData
 import gcn_data_creator as gcn
-
+from string import ascii_uppercase, digits, punctuation
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+import plotData as plot
 
 trainTextDir = "/Users/markolazic/Desktop/exjobb/project/data/train/text"
 trainLabelsDir = "/Users/markolazic/Desktop/exjobb/project/data/train/labels"
-lstmResultDir = '/Users/markolazic/Desktop/sroie-task3/src/results'
+lstmResultDir = '/Users/markolazic/Desktop/sroie-task3/src/results1000'
 
 receipts = []
 testFilePaths = []
@@ -49,6 +53,33 @@ def main(args):
             test_reciepts.append(receipt)
 
 
+    if args[1] == 'plot_bert':
+        d1 = pd.DataFrame({'train synthetic 10000': plot.train_10000_v2, 'validation synthetic 10000': plot.val_10000_v2}, index=range(1,31))
+        d2 = pd.DataFrame({'train synthetic 1000': plot.train_1000, 'validation synthetic 1000': plot.val_1000})
+        d3 = pd.DataFrame({'train real data': plot.train, 'validation real data': plot.val}, index=range(1,31))
+        data = pd.concat([d1,d2,d3], axis=1)
+        sns.set_style("darkgrid")
+        ax = sns.lineplot(data=data)
+        ax.set(xlabel='epoch', ylabel='loss')
+        plt.show()
+
+    if args[1] == 'plot_lstm':
+        f1 = open('/Users/markolazic/Desktop/sroie-task3/data/trainLoss.txt','r')
+        f2 = open('/Users/markolazic/Desktop/sroie-task3/data/valLoss.txt','r')
+        f1Lines = f1.readlines()
+        f2Lines = f2.readlines()
+        trail_loss = []
+        for line in f1Lines:
+            trail_loss.append(float(line[:-1]))
+        val_loss = []
+        for line in f2Lines:
+            val_loss.append(float(line[:-1]))
+
+        print(trail_loss, val_loss)
+
+
+
+
     if args[1] == 'create_data_statistics':
         stats = util.create_data_statistics(receipts, 'vendor')
         for k, v in sorted(stats.items(), reverse = True, key=lambda item: item[1]):
@@ -66,7 +97,7 @@ def main(args):
         gcn.create(receipts, testFilePaths)
 
     if args[1] == 'create_result':
-        path = './data/results/100epochv2_prod'
+        path = './data/results/10000_synt'
         test_dict_path = os.path.join(path, 'res_dict.pth')
         res_dict = torch.load(test_dict_path)
         result = list(res_dict.items())
@@ -90,8 +121,9 @@ def main(args):
                 train_data_dict[i] = data_gen.generateWordClasses(receipt, correcting=False)
         if generateSynthetic:
             synthetic = generateSintheticData(receipts, number)
-            for i, receipt in enumerate(synthetic):
-                train_data_dict[i + len(receipts)] = (receipt.dataWords, receipt.dataLabels)
+            for i, (words, labels) in enumerate(synthetic):
+                train_data_dict[i + len(receipts)] = (words, labels)
+        '''
         vocab = data_gen.createVocabulary(receipts + synthetic)
         f=open('./data/synt_vocab.txt',"w+")
         for w in vocab:
@@ -101,8 +133,8 @@ def main(args):
         f.write('[SEP]' + '\n')
         f.write('[MASK]' + '\n')
         f.close()
-
-        torch.save(train_data_dict, "./data/synt_train_data_dict.pth")
+        '''
+        torch.save(train_data_dict, "./data/synt_10000_train_data_dict.pth")
         torch.save(test_data_dict, "./data/synt_test_data_dict.pth")
 
     if args[1] == 'oracle':
@@ -127,6 +159,8 @@ def main(args):
         calculateLSTMaccuracy(test_reciepts, results_dicts)
                 
     elif args[1] == 'create_char_data':
+        generateSynthetic = True
+        number = 10000
         train_data_dict = {}
         test_data_dict = {}
         for i, receipt in enumerate(receipts):
@@ -134,8 +168,32 @@ def main(args):
                 test_data_dict[i] = data_gen.generateCharClasses(receipt, includeProducts=True)
             else:
                 train_data_dict[i] = data_gen.generateCharClasses(receipt, includeProducts=True)
-        torch.save(train_data_dict, "/Users/markolazic/Desktop/sroie-task3/data/train_char_data_prod.pth")
-        torch.save(test_data_dict, "/Users/markolazic/Desktop/sroie-task3/data/test_char_data_prod.pth")
+        if generateSynthetic:
+            VOCAB = ascii_uppercase + digits + punctuation + " \t\n"
+            for r in receipts:
+                data_gen.generateWordClasses(r)
+            synthetic = generateSintheticData(receipts, number)
+            for i, (words, labels) in enumerate(synthetic):
+                t_new_words = ''
+                t_new_labels = []
+                for w, l in zip(words, labels):
+                    t_new_words += w.upper() + ' '
+                    t_new_labels +=[util.getClassInt(l) for i in range(len(w))] + [0]
+                new_words = ''
+                new_labels = []
+                for index in range(len(t_new_words)):
+                    if t_new_words[index] in VOCAB:
+                        new_words+= t_new_words[index]
+                        new_labels.append(t_new_labels[index])
+                new_words = new_words[0:-1]
+                new_labels = new_labels[0:-1]
+                for i in range(1, len(new_words) - 1):
+                    if new_labels[i] == 0 and new_labels[i-1] == new_labels[i+1]:
+                        new_labels[i] = new_labels[i-1]
+                train_data_dict[len(receipts) + i] = (new_words, new_labels)
+        print(train_data_dict)
+        torch.save(train_data_dict, "/Users/markolazic/Desktop/sroie-task3/data/train_char_data_prod_synt10000.pth")
+        torch.save(test_data_dict, "/Users/markolazic/Desktop/sroie-task3/data/test_char_data_prod_synt10000.pth")
 
 
 if __name__ == '__main__':

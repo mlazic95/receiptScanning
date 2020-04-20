@@ -27,6 +27,10 @@ def calculateLSTMaccuracy(receipts, results):
     address_found = 0
     address_correct = 0
 
+    products_total = 0
+    products_found = 0
+    products_correct = 0
+
     for i, receipt in enumerate(receipts):
       ## Check total price
         if 'total_price' in results[i]:
@@ -37,7 +41,12 @@ def calculateLSTMaccuracy(receipts, results):
                 continue
               to_remove.append(p)
             for p in to_remove:
-              price = price.replace(p,'')
+              price = price.replace(p, '')
+            if price.count('.') == 2:
+                index = price.index('.')
+                price = price[0 : index : ] + price[index + 1 : :]
+            elif price.count('.') == 1 and len(price.split('.')[-1]) > 2:
+                price = price.replace('.', '')
         else:
             price = None
         if price and price != '':
@@ -49,6 +58,13 @@ def calculateLSTMaccuracy(receipts, results):
         ## Check currecy
         if 'currency' in results[i]:
             currency = results[i]['currency']
+            to_remove = []
+            for c in currency:
+              if c.isalpha():
+                continue 
+              to_remove.append(c)
+            for c in to_remove:
+              currency = currency.replace(c, '')
         else:
             currency = None
         if currency and currency != '':
@@ -60,6 +76,11 @@ def calculateLSTMaccuracy(receipts, results):
         ## Check date
         if 'date' in results[i]:
             date = results[i]['date']
+            split = date.split(' ')
+            if len(split) == 2:
+                date = split[0]
+                if len(split[1]) > len(split[0]):
+                    date = split[1]
         else:
             date = None
         if date and date != '':
@@ -82,6 +103,9 @@ def calculateLSTMaccuracy(receipts, results):
         ## Check tax rate
         if 'tax_rate' in results[i]:
             tax = results[i]['tax_rate']
+            split = tax.split(' ')
+            if len(split) == 2:
+                tax = split[0]
         else:
             tax = None
         if tax and tax != '':
@@ -101,12 +125,31 @@ def calculateLSTMaccuracy(receipts, results):
             address_total+=1
             if compare.address(receipt.groundTruth['address'], address):
                 address_correct += 1
+        if 'products' in receipt.groundTruth:
+            products_total += len(receipt.groundTruth['products'])
+        if 'products' in results[i]:
+            products = results[i]['products']
+        found = []
+        for product in products:
+            product['amount'] = 1
+            products_found += 1
+            if not 'name' in product:
+                continue
+            if 'products' in receipt.groundTruth:
+                real_products = receipt.groundTruth['products']
+                for j,real_product in enumerate(real_products):
+                    if j in found:
+                        continue
+                    if compare.products(product, real_product):
+                        print(product, real_product)
+                        found.append(j)
+                        products_correct += 1
+                        break
+            
 
-
-
-    totalDataPoints = vendor_total + date_total + address_total + tax_rate_total +  total_price_total + currency_total
-    totalDataPointsFound = vendor_found + date_found + address_found + tax_rate_found + total_price_found + currency_found
-    totalCorrect = vendor_correct + date_correct + address_correct + tax_rate_correct + total_price_correct + currency_correct
+    totalDataPoints = vendor_total + date_total + address_total + tax_rate_total +  total_price_total + currency_total + products_total
+    totalDataPointsFound = vendor_found + date_found + address_found + tax_rate_found + total_price_found + currency_found + products_found
+    totalCorrect = vendor_correct + date_correct + address_correct + tax_rate_correct + total_price_correct + currency_correct + products_correct
 
     total_precision = 0
     total_recall = 0
@@ -124,6 +167,8 @@ def calculateLSTMaccuracy(receipts, results):
     print(date_total, date_found, date_correct)
     precision = util.precision(date_correct, date_found)
     recall = util.recall(date_total, date_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -131,6 +176,8 @@ def calculateLSTMaccuracy(receipts, results):
     print(address_total, address_found, address_correct)
     precision = util.precision(address_correct, address_found)
     recall = util.recall(address_total, address_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -138,6 +185,8 @@ def calculateLSTMaccuracy(receipts, results):
     print(tax_rate_total, tax_rate_found, tax_rate_correct)
     precision = util.precision(tax_rate_correct, tax_rate_found)
     recall = util.recall(tax_rate_total, tax_rate_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -145,6 +194,8 @@ def calculateLSTMaccuracy(receipts, results):
     print(total_price_total, total_price_found, total_price_correct)
     precision = util.precision(total_price_correct, total_price_found)
     recall = util.recall(total_price_total, total_price_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -152,6 +203,17 @@ def calculateLSTMaccuracy(receipts, results):
     print(currency_total, currency_found, currency_correct)
     precision = util.precision(currency_correct, currency_found)
     recall = util.recall(currency_total, currency_correct)
+    total_precision += precision
+    total_recall += recall
+    print('Precision:', precision)
+    print('Recall:', recall)
+    print('F1:', util.fScore(precision, recall))
+    print('-----PRODUCTS-----')
+    print(products_total, products_found, products_correct)
+    precision = util.precision(products_correct, products_found)
+    recall = util.recall(products_total, products_correct)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
@@ -159,13 +221,15 @@ def calculateLSTMaccuracy(receipts, results):
     print(totalDataPoints, totalDataPointsFound, totalCorrect)
     precision = util.precision(totalCorrect, totalDataPointsFound)
     recall = util.recall(totalDataPoints, totalCorrect)
+    total_precision += precision
+    total_recall += recall
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))
     print('-----MACRO AVG-----')
     print(totalDataPoints, totalDataPointsFound, totalCorrect)
-    precision = util.precision(totalCorrect, totalDataPointsFound)
-    recall = util.recall(totalDataPoints, totalCorrect)
+    precision = total_precision / 7.0
+    recall = total_recall / 7.0
     print('Precision:', precision)
     print('Recall:', recall)
     print('F1:', util.fScore(precision, recall))

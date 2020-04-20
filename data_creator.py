@@ -20,13 +20,15 @@ def generateSintheticData(receipts, number):
     new = {
       'vendor': vendor_generator.generateVendor(),
       'date': getRandomDate(),
-      'price': getRandomPrice(),
+      'total_price': getRandomPrice(),
       'address': address_generator.generateAddress()
       }
+    #for w, l in zip(synth.dataWords, synth.dataLabels):
+      #print(w, '***', l)
     for i, (w, l) in enumerate(zip(synth.dataWords, synth.dataLabels)):
       if i < index:
         continue
-      if l == 'vendor' or l == 'date' or l == 'price' or l == 'address' or l =='product_name':
+      if l == 'vendor' or l == 'date' or l == 'address' or l =='product_name':
         if l == 'product_name':
           newDataPoint = products_generator.generateProducts()
         else:
@@ -41,8 +43,8 @@ def generateSintheticData(receipts, number):
         newDataWords.append(w)
         newDataLabels.append(l)
 
-    synth.dataLabel = newDataLabels
-    synth.dataWords = newDataWords
-
-    synthetic_receipts.append(synth)
+    synth.dataLabel = copy.deepcopy(newDataLabels)
+    synth.dataWords = copy.deepcopy(newDataWords)
+   
+    synthetic_receipts.append((newDataWords, newDataLabels))
   return synthetic_receipts

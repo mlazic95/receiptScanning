@@ -1,6 +1,7 @@
 import util
 import json
 import os
+from Levenshtein import distance as levenshtein_distance
 
 def extract(labels, words):
   res_dict = {} 
@@ -154,8 +155,8 @@ def calculateMetrics(reciepts, result, writeToFile=False, path=None):
           vendorsFound+=1
           vendor = vendor.lower()
       if 'vendor' in reciept.groundTruth:
-        vendors += 1
-        if vendor == reciept.groundTruth['vendor'].lower():
+        vendors += 1     
+        if vendor and levenshtein_distance(vendor, reciept.groundTruth['vendor'].lower()) <= 0:
             correctVendors +=1
         else:
             corr = False
@@ -177,7 +178,7 @@ def calculateMetrics(reciepts, result, writeToFile=False, path=None):
           address = address.lower()
       if 'address' in reciept.groundTruth:
           addresses += 1
-          if address == reciept.groundTruth['address'].lower():
+          if address and levenshtein_distance(address, reciept.groundTruth['address'].lower()) <= 0:
               correctAddresses +=1
           else:
               corr = False
@@ -234,12 +235,17 @@ def calculateMetrics(reciepts, result, writeToFile=False, path=None):
                       price = None
               real_price = real_product['price']
               real_price = float(real_price)
-              if product['name'].lower() == real_product['name'].lower():
+              if levenshtein_distance(product['name'].lower(), real_product['name'].lower()) <= 0:
                 if util.floatCompare(price, real_price):
                     if product['amount'] == real_product['amount']:
                         correctProducts +=1
                         checkedIndexes.append(i)
                         break
+      if len(checkedIndexes) < len(reciept.groundTruth['products']):
+          corr = False
+      if corr:
+          count +=1
+
       if writeToFile:
         with open(os.path.join(path, reciept.path), 'w') as fp:
             json.dump(result_dict, fp, indent=1)
@@ -325,8 +331,8 @@ def calculateMetrics(reciepts, result, writeToFile=False, path=None):
   print('F1:', util.fScore(precision, recall))
   print('-----MACRO AVG-----')
   print(totalDataPoints, totalDataPointsFound, totalCorrect)
-  precision = total_precision
-  recall = total_recall
+  precision = total_precision / 7.0
+  recall = total_recall / 7.0
   print('Precision:', precision)
   print('Recall:', recall)
   print('F1:', util.fScore(precision, recall))

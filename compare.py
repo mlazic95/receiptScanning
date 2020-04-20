@@ -81,7 +81,7 @@ def products(p1,p2):
     #print(p1['name'].lower(),'---', p2['name'].lower())
     n1 = p1['name'].lower()
     n2 = p2['name'].lower()
-    if levenshtein_distance(n1,n2) <= 3:
+    if levenshtein_distance(n1,n2) <= 0:
         try:
             price1 = float(p1['price'].replace(',', '.'))
         except:
