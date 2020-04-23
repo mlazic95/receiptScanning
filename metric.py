@@ -31,7 +31,9 @@ def calculateLSTMaccuracy(receipts, results):
     products_found = 0
     products_correct = 0
 
+    count = 0
     for i, receipt in enumerate(receipts):
+        corr = True
       ## Check total price
         if 'total_price' in results[i]:
             price = results[i]['total_price'].replace(',','.')
@@ -55,6 +57,8 @@ def calculateLSTMaccuracy(receipts, results):
             total_price_total+= 1
             if compare.totalPrice(receipt.groundTruth['total_price'], price):
                 total_price_correct += 1
+            else:
+                corr = False
         ## Check currecy
         if 'currency' in results[i]:
             currency = results[i]['currency']
@@ -73,6 +77,8 @@ def calculateLSTMaccuracy(receipts, results):
             currency_total+=1
             if compare.currency(receipt.groundTruth['currency'], currency):
                 currency_correct += 1
+            else:
+                corr = False
         ## Check date
         if 'date' in results[i]:
             date = results[i]['date']
@@ -89,6 +95,8 @@ def calculateLSTMaccuracy(receipts, results):
             date_total+=1
             if compare.date(receipt.groundTruth['date'],date):
                 date_correct += 1
+            else:
+                corr = False
         ## Check vendor
         if 'vendor' in results[i]:
             vendor = results[i]['vendor']
@@ -100,6 +108,8 @@ def calculateLSTMaccuracy(receipts, results):
             vendor_total+=1
             if compare.vendor(receipt.groundTruth['vendor'], vendor):
                 vendor_correct += 1
+            else:
+                corr = False
         ## Check tax rate
         if 'tax_rate' in results[i]:
             tax = results[i]['tax_rate']
@@ -114,6 +124,8 @@ def calculateLSTMaccuracy(receipts, results):
             tax_rate_total+=1
             if compare.taxRate(receipt.groundTruth['tax_rate'], tax):
                 tax_rate_correct += 1
+            else:
+                corr = False
         ## Check address
         if 'address' in results[i]:
             address = results[i]['address']
@@ -125,6 +137,8 @@ def calculateLSTMaccuracy(receipts, results):
             address_total+=1
             if compare.address(receipt.groundTruth['address'], address):
                 address_correct += 1
+            else:
+                corr = False
         if 'products' in receipt.groundTruth:
             products_total += len(receipt.groundTruth['products'])
         if 'products' in results[i]:
@@ -141,7 +155,6 @@ def calculateLSTMaccuracy(receipts, results):
                     if j in found:
                         continue
                     if compare.products(product, real_product):
-                        print(product, real_product)
                         found.append(j)
                         products_correct += 1
                         break
@@ -153,7 +166,9 @@ def calculateLSTMaccuracy(receipts, results):
 
     total_precision = 0
     total_recall = 0
-      
+    
+    print('-----TOTAL CORRECT RECEIPTS-----')
+    print(count, 'of', len(receipts))
     print('-----VENDORS-----')
     print(vendor_total, vendor_found, vendor_correct)
     precision = util.precision(vendor_correct, vendor_found)

@@ -167,7 +167,7 @@ def calculateMetrics(reciepts, result, writeToFile=False, path=None):
           date = date.lower()
       if 'date' in reciept.groundTruth:
           dates += 1
-          if date == reciept.groundTruth['date'].lower():
+          if date == reciept.groundTruth['date'].lower() or date == reciept.groundTruth['date'].lower().replace(' ', ''):
               correctDates +=1
           else:
               corr = False
@@ -184,7 +184,7 @@ def calculateMetrics(reciepts, result, writeToFile=False, path=None):
               corr = False
       tax = result[i]['tax_rate']
       result_dict['tax_rate'] = tax
-      if tax:
+      if tax != None:
           taxesFound+=1
       if 'tax_rate' in reciept.groundTruth:
           taxes += 1
@@ -242,7 +242,7 @@ def calculateMetrics(reciepts, result, writeToFile=False, path=None):
                         checkedIndexes.append(i)
                         break
       if len(checkedIndexes) < len(reciept.groundTruth['products']):
-          corr = False
+          corr |= False
       if corr:
           count +=1
 

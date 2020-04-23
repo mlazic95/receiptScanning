@@ -23,7 +23,7 @@ import plotData as plot
 
 trainTextDir = "/Users/markolazic/Desktop/exjobb/project/data/train/text"
 trainLabelsDir = "/Users/markolazic/Desktop/exjobb/project/data/train/labels"
-lstmResultDir = '/Users/markolazic/Desktop/sroie-task3/src/results1000'
+lstmResultDir = '/Users/markolazic/Desktop/sroie-task3/src/results'
 
 receipts = []
 testFilePaths = []
@@ -55,7 +55,7 @@ def main(args):
 
     if args[1] == 'plot_bert':
         d1 = pd.DataFrame({'train synthetic 10000': plot.train_10000_v2, 'validation synthetic 10000': plot.val_10000_v2}, index=range(1,31))
-        d2 = pd.DataFrame({'train synthetic 1000': plot.train_1000, 'validation synthetic 1000': plot.val_1000})
+        d2 = pd.DataFrame({'train synthetic 1000': plot.train_1000, 'validation synthetic 1000': plot.val_1000}, index=range(1,31))
         d3 = pd.DataFrame({'train real data': plot.train, 'validation real data': plot.val}, index=range(1,31))
         data = pd.concat([d1,d2,d3], axis=1)
         sns.set_style("darkgrid")
@@ -66,18 +66,44 @@ def main(args):
     if args[1] == 'plot_lstm':
         f1 = open('/Users/markolazic/Desktop/sroie-task3/data/trainLoss.txt','r')
         f2 = open('/Users/markolazic/Desktop/sroie-task3/data/valLoss.txt','r')
+        f3 = open('/Users/markolazic/Desktop/sroie-task3/data/trainLoss1000.txt', 'r')
+        f4 = open('/Users/markolazic/Desktop/sroie-task3/data/valLoss1000.txt', 'r')
+        f5 = open('/Users/markolazic/Desktop/sroie-task3/data/trainLoss10000.txt', 'r')
+        f6 = open('/Users/markolazic/Desktop/sroie-task3/data/valLoss10000.txt', 'r')
         f1Lines = f1.readlines()
         f2Lines = f2.readlines()
-        trail_loss = []
+        f3Lines = f3.readlines()
+        f4Lines = f4.readlines()
+        f5Lines = f5.readlines()
+        f6Lines = f6.readlines()
+        train_loss = []
         for line in f1Lines:
-            trail_loss.append(float(line[:-1]))
+            train_loss.append(float(line[:-1]))
         val_loss = []
         for line in f2Lines:
             val_loss.append(float(line[:-1]))
+        train_loss1000 = []
+        for line in f3Lines:
+            train_loss1000.append(float(line[:-1]))
+        val_loss1000 = []
+        for line in f4Lines:
+            val_loss1000.append(float(line[:-1]))
+        train_loss10000 = []
+        for line in f5Lines:
+            train_loss10000.append(float(line[:-1]))
+        val_loss10000 = []
+        for line in f6Lines:
+            val_loss10000.append(float(line[:-1]))
 
-        print(trail_loss, val_loss)
-
-
+        d1 = pd.DataFrame({'train synthetic 10000': train_loss10000, 'validation synthetic 10000': val_loss10000 }, index=range(1,2001))
+        d2 = pd.DataFrame({'train synthetic 1000': train_loss1000,'validation synthetic 1000': val_loss1000}, index=range(1,2001))
+        d3 = pd.DataFrame({'train real data': train_loss, 'validation real data': val_loss}, index=range(1,2001))
+        data = pd.concat([d1,d2,d3], axis=1)
+        data = data.rolling(100).mean()
+        sns.set_style("darkgrid")
+        ax = sns.lineplot(data=data)
+        ax.set(xlabel='epoch', ylabel='loss')
+        plt.show()
 
 
     if args[1] == 'create_data_statistics':
@@ -119,8 +145,12 @@ def main(args):
                 test_data_dict[i] = data_gen.generateWordClasses(receipt)
             else:
                 train_data_dict[i] = data_gen.generateWordClasses(receipt, correcting=False)
+        train_receipts = []
+        for r in receipts:
+            if r.path not in testFilePaths:
+                train_receipts.append(r)
         if generateSynthetic:
-            synthetic = generateSintheticData(receipts, number)
+            synthetic = generateSintheticData(train_receipts, number)
             for i, (words, labels) in enumerate(synthetic):
                 train_data_dict[i + len(receipts)] = (words, labels)
         '''

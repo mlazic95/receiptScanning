@@ -3,6 +3,7 @@ import text_processor as tx
 import string
 import re
 import copy
+import pandas as pd
 
 currencyList = ['SEK', 'DKK','CHF', 'EUR', 'USD', 'GBP', 'IDR']
 months = ['jan', 'feb', 'mar', 'apr', 'maj', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec', 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', 'okt']
@@ -110,6 +111,9 @@ def stringInLine(line, s):
         if s in word['text'].lower():
             return True
     return False
+
+def rolling_mean(data, axis=0):
+    return data.rolling(4).mean(axis=axis)
 
 def alphaRatio(s):
     alpha = 0.0
